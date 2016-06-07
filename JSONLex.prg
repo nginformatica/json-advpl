@@ -1,20 +1,26 @@
+#include 'fileio.ch'
+#ifdef __HARBOUR__
+  #include 'hbclass.ch'
+#endif
+
 // Define tokens
 
-#DEFINE T_OPEN_BRACE    "T_OPEN_BRACE"
-#DEFINE T_CLOSE_BRACE   "T_CLOSE_BRACE"
-#DEFINE T_COMMA         "T_COMMA"
-#DEFINE T_COLON         "T_COLON"
-#DEFINE T_OPEN_BRACKET  "T_OPEN_BRACKET"
-#DEFINE T_CLOSE_BRACKET "T_CLOSE_BRACKET"
-#DEFINE T_TRUE          "T_TRUE"
-#DEFINE T_FALSE         "T_FALSE"
-#DEFINE T_NULL          "T_NULL"
-#DEFINE T_NUMBER        "T_NUMBER"
-#DEFINE T_STRING        "T_STRING"
-#DEFINE T_ERROR         "T_ERROR"
+#define T_OPEN_BRACE    "T_OPEN_BRACE"
+#define T_CLOSE_BRACE   "T_CLOSE_BRACE"
+#define T_COMMA         "T_COMMA"
+#define T_COLON         "T_COLON"
+#define T_OPEN_BRACKET  "T_OPEN_BRACKET"
+#define T_CLOSE_BRACKET "T_CLOSE_BRACKET"
+#define T_TRUE          "T_TRUE"
+#define T_FALSE         "T_FALSE"
+#define T_NULL          "T_NULL"
+#define T_NUMBER        "T_NUMBER"
+#define T_STRING        "T_STRING"
+#define T_ERROR         "T_ERROR"
 
 #XTRANSLATE @Add_Token <xTok> => aAdd( aTokens, <xTok> )
-#XTRANSLATE @Lexer_Error <nCode> => Return { { T_ERROR, <nCode> } }
+#XTRANSLATE @Lexer_Error <cMessage> => Return { { T_ERROR, <cMessage> } }
+#XTRANSLATE @Parse_Error <cMessage> => Return { { <cMessage> } }
 #XTRANSLATE @Match { <w> } => IsMatch( <w>, aCharList, nPosition, nSourceSize )
 #XTRANSLATE @Not_Eof => ( nPosition <= nSourceSize )
 #XTRANSLATE @Increase_Position => nPosition++; nColumn++
@@ -245,10 +251,62 @@ Function JSONLex( cSource )
 
   Return aTokens
 
-Function Main
-  Local cLex := JSONLex( '{"haskell \uAEF1a": 1, ' + Chr( 13 ) + Chr( 10 ) + ' "name": 2.9e+10}' )
+Function JSONMinify( cSource )
+  Local aLex := JSONLex( cSource )
+  Local cOut := ''
   Local nI
-  For nI := 1 To Len( cLex )
-    OutStd( "[" + cLex[ nI, 1 ] + IIf( cLex[ nI, 2 ] <> Nil, ", " + cLex[ nI, 2 ], "" ) + "]" )
-  Next nI
 
+  If .Not. ( Len( aLex ) == 1 .And. aLex[ 1, 1 ] == T_ERROR )
+    For nI := 1 To Len( aLex )
+      Do Case
+        Case aLex[ nI, 1 ] == T_STRING
+          cOut += '"' + aLex[ nI, 2 ] + '"'
+
+        Case aLex[ nI, 1 ] == T_NUMBER
+          cOut += aLex[ nI, 2 ]
+
+        Case aLex[ nI, 1 ] == T_TRUE
+          cOut += 'true'
+
+        Case aLex[ nI, 1 ] == T_FALSE
+          cOut += 'false'
+
+        Case aLex[ nI, 1 ] == T_NULL
+          cOut += 'null'
+
+        Case aLex[ nI, 1 ] == T_OPEN_BRACE
+          cOut += '{'
+
+        Case aLex[ nI, 1 ] == T_CLOSE_BRACE
+          cOut += '}'
+
+        Case aLex[ nI, 1 ] == T_OPEN_BRACKET
+          cOut += '['
+
+        Case aLex[ nI, 1 ] == T_CLOSE_BRACKET
+          cOut += ']'
+
+        Case aLex[ nI, 1 ] == T_COLON
+          cOut += ':'
+
+        Case aLex[ nI, 1 ] == T_COMMA
+          cOut += ','
+
+      EndCase
+    Next nI
+  Else
+    Return { aLex[ 1, 2] }
+  EndIf
+
+  Return cOut
+
+Function Main
+  Local nHandler  := fOpen( './json/main.json', FO_READWRITE + FO_SHARED )
+  Local nSize     := Directory( './json/main.json' )[ 1, 2 ]
+  Local xBuffer   := Space( nSize )
+  Local cMinified
+
+  fRead( nHandler, @xBuffer, nSize )
+  cMinified := JSONMinify( xBuffer )
+  OutStd( cMinified )
+  Return
