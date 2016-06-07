@@ -1,7 +1,41 @@
 #include 'fileio.ch'
 #ifdef __HARBOUR__
   #include 'hbclass.ch'
+#else
+  #include 'protheus.ch'
 #endif
+
+Class JSONObject
+  Data aKeys   Init { }
+  Data aValues Init { }
+
+  Method New() Constructor
+  Method Set( cKey, xValue )
+  Method Get( cKey )
+EndClass
+
+Method New() Class JSONObject
+  Return Self
+
+Method Set( cKey, xValue ) Class JSONObject
+  aAdd( ::aKeys, cKey )
+  aAdd( ::aValues, xValue )
+  Return
+
+Method Get( cKey ) Class JSONObject
+  Local nSize := Len( ::aKeys )
+  Local nI
+
+  If nSize <> 0
+    For nI := 1 To nSize
+      If ::aKeys[ nI ] == cKey
+        Return ::aValues[ nI ]
+      EndIf
+    Next nI
+  End
+
+  Return Nil
+
 
 // Define tokens
 
@@ -18,12 +52,14 @@
 #define T_STRING        "T_STRING"
 #define T_ERROR         "T_ERROR"
 
-#XTRANSLATE @Add_Token <xTok> => aAdd( aTokens, <xTok> )
-#XTRANSLATE @Lexer_Error <cMessage> => Return { { T_ERROR, <cMessage> } }
-#XTRANSLATE @Parse_Error <cMessage> => Return { { <cMessage> } }
-#XTRANSLATE @Match { <w> } => IsMatch( <w>, aCharList, nPosition, nSourceSize )
-#XTRANSLATE @Not_Eof => ( nPosition <= nSourceSize )
-#XTRANSLATE @Increase_Position => nPosition++; nColumn++
+#xtranslate @Add_Token <xTok> => aAdd( aTokens, <xTok> )
+#xtranslate @Lexer_Error <cMessage> => Return { { T_ERROR, <cMessage> } }
+#xtranslate @Parse_Error <cMessage> => Return { { <cMessage> } }
+#xtranslate @Match { <w> } => IsMatch( <w>, aCharList, nPosition, nSourceSize )
+#xtranslate @Not_Eof => ( nPosition <= nSourceSize )
+#xtranslate @Increase_Position => nPosition++; nColumn++
+#xtranslate \[ \# <cKey> \] => :Get( <cKey> )
+#xtranslate \[ \# <cKey> \] := <cValue> => :Set( <cKey>, <cValue> )
 
 Static Function StrToList( cStr )
   Local aList := { }
@@ -295,12 +331,25 @@ Function JSONMinify( cSource )
       EndCase
     Next nI
   Else
-    Return { aLex[ 1, 2] }
+    Return { aLex[ 1, 2 ] }
   EndIf
 
   Return cOut
 
 Function Main
+  Local oData := JSONObject():New()
+  Local oSub  := JSONObject():New()
+
+  oSub[#'sub'] := 'java'
+  oData[#'key'] := oSub
+
+  oData[#'key'][#'sub'] := 1
+
+  OutStd( oData[#'key'][#'sub'] )
+
+  Return
+
+Function TestMinify
   Local nHandler  := fOpen( './json/main.json', FO_READWRITE + FO_SHARED )
   Local nSize     := Directory( './json/main.json' )[ 1, 2 ]
   Local xBuffer   := Space( nSize )
