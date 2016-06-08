@@ -9,9 +9,9 @@
  */
 #include 'fileio.ch'
 #ifdef __HARBOUR__
-  #include 'hbclass.ch'
+   #include 'hbclass.ch'
 #else
-  #include 'protheus.ch'
+   #include 'protheus.ch'
 #endif
 
 // Language tokens
@@ -46,12 +46,12 @@
  * @class JSONObject
  */
 Class JSONObject
-  Data aKeys   Init { }
-  Data aValues Init { }
+   Data aKeys   Init { }
+   Data aValues Init { }
 
-  Method New() Constructor
-  Method Set( cKey, xValue )
-  Method Get( cKey )
+   Method New() Constructor
+   Method Set( cKey, xValue )
+   Method Get( cKey )
 EndClass
 
 /**
@@ -61,7 +61,7 @@ EndClass
  * @return JSONObject
  */
 Method New() Class JSONObject
-  Return Self
+   Return Self
 
 /**
  * Our object is a set. This method creates or updates the entry according to
@@ -73,22 +73,22 @@ Method New() Class JSONObject
  * @return Nil
  */
 Method Set( cKey, xValue ) Class JSONObject
-  Local nSize := Len( ::aKeys )
-  Local nI
+   Local nSize := Len( ::aKeys )
+   Local nI
 
-  // When the key is found, update. Otherwise, create
-  If nSize <> 0
-    For nI := 1 To nSize
-      If ::aKeys[ nI ] == cKey
-        ::aValues[ nI ] := xValue
-        Return
-      EndIf
-    Next nI
-  End
+   // When the key is found, update. Otherwise, create
+   If nSize <> 0
+      For nI := 1 To nSize
+         If ::aKeys[ nI ] == cKey
+            ::aValues[ nI ] := xValue
+            Return
+         EndIf
+      Next nI
+   End
 
-  aAdd( ::aKeys, cKey )
-  aAdd( ::aValues, xValue )
-  Return
+   aAdd( ::aKeys, cKey )
+   aAdd( ::aValues, xValue )
+   Return
 
 /**
  * Returns the value by key. Nil when not found
@@ -98,18 +98,18 @@ Method Set( cKey, xValue ) Class JSONObject
  * @return Any
  */
 Method Get( cKey ) Class JSONObject
-  Local nSize := Len( ::aKeys )
-  Local nI
+   Local nSize := Len( ::aKeys )
+   Local nI
 
-  If nSize <> 0
-    For nI := 1 To nSize
-      If ::aKeys[ nI ] == cKey
-        Return ::aValues[ nI ]
-      EndIf
-    Next nI
-  End
+   If nSize <> 0
+      For nI := 1 To nSize
+         If ::aKeys[ nI ] == cKey
+            Return ::aValues[ nI ]
+         EndIf
+      Next nI
+   End
 
-  Return Nil
+   Return Nil
 
 /**
  * The lexer returns a stream of tokens or one single token containing { T_ERROR }
@@ -117,22 +117,22 @@ Method Get( cKey ) Class JSONObject
  * @class JSONLexer
  */
 Class JSONLexer
-  Data aCharList   Init { }
-  Data aTokens     Init { }
-  Data cError      Init ''
-  Data nPosition   Init 1
-  Data nSourceSize Init 0
-  Data nLine       Init 1
-  Data nColumn     Init 1
+   Data aCharList   Init { }
+   Data aTokens     Init { }
+   Data cError      Init ''
+   Data nPosition   Init 1
+   Data nSourceSize Init 0
+   Data nLine       Init 1
+   Data nColumn     Init 1
 
-  Method New( cSource ) Constructor
-  Method StrToList( cStr )
-  Method Minify()
-  Method GetTokens()
-  Method Keyword()
-  Method Number()
-  Method WhiteSpace()
-  Method String()
+   Method New( cSource ) Constructor
+   Method StrToList( cStr )
+   Method Minify()
+   Method GetTokens()
+   Method Keyword()
+   Method Number()
+   Method WhiteSpace()
+   Method String()
 EndClass
 
 /**
@@ -142,9 +142,9 @@ EndClass
  * @return JSONLexer
  */
 Method New( cSource ) Class JSONLexer
-  ::aCharList   := ::StrToList( cSource )
-  ::nSourceSize := Len( ::aCharList )
-  Return Self
+   ::aCharList   := ::StrToList( cSource )
+   ::nSourceSize := Len( ::aCharList )
+   Return Self
 
 /**
  * Converts a string to a char list
@@ -154,14 +154,14 @@ Method New( cSource ) Class JSONLexer
  * @return Array
  */
 Method StrToList( cStr ) Class JSONLexer
-  Local aList := { }
-  Local nI
-  Local xBuffer
-  For nI := 1 To Len( cStr )
-    aAdd( aList, SubStr( cStr, nI, 1 ) )
-  Next nI
+   Local aList := { }
+   Local nI
+   Local xBuffer
+   For nI := 1 To Len( cStr )
+      aAdd( aList, SubStr( cStr, nI, 1 ) )
+   Next nI
 
-  Return aList
+   Return aList
 
 /**
  * Minifies a JSON string
@@ -170,53 +170,53 @@ Method StrToList( cStr ) Class JSONLexer
  * @return Character
  */
 Method Minify() Class JSONLexer
-  Local aLex := ::GetTokens()
-  Local cOut := ''
-  Local nI
+   Local aLex := ::GetTokens()
+   Local cOut := ''
+   Local nI
 
-  If .Not. ( Len( aLex ) == 1 .And. aLex[ 1, 1 ] == T_ERROR )
-    For nI := 1 To Len( aLex )
-      Do Case
-        Case aLex[ nI, 1 ] == T_STRING
-          cOut += '"' + aLex[ nI, 2 ] + '"'
+   If .Not. ( Len( aLex ) == 1 .And. aLex[ 1, 1 ] == T_ERROR )
+      For nI := 1 To Len( aLex )
+         Do Case
+            Case aLex[ nI, 1 ] == T_STRING
+               cOut += '"' + aLex[ nI, 2 ] + '"'
 
-        Case aLex[ nI, 1 ] == T_NUMBER
-          cOut += aLex[ nI, 2 ]
+            Case aLex[ nI, 1 ] == T_NUMBER
+               cOut += aLex[ nI, 2 ]
 
-        Case aLex[ nI, 1 ] == T_TRUE
-          cOut += 'true'
+            Case aLex[ nI, 1 ] == T_TRUE
+               cOut += 'true'
 
-        Case aLex[ nI, 1 ] == T_FALSE
-          cOut += 'false'
+            Case aLex[ nI, 1 ] == T_FALSE
+               cOut += 'false'
 
-        Case aLex[ nI, 1 ] == T_NULL
-          cOut += 'null'
+            Case aLex[ nI, 1 ] == T_NULL
+               cOut += 'null'
 
-        Case aLex[ nI, 1 ] == T_OPEN_BRACE
-          cOut += '{'
+            Case aLex[ nI, 1 ] == T_OPEN_BRACE
+               cOut += '{'
 
-        Case aLex[ nI, 1 ] == T_CLOSE_BRACE
-          cOut += '}'
+            Case aLex[ nI, 1 ] == T_CLOSE_BRACE
+               cOut += '}'
 
-        Case aLex[ nI, 1 ] == T_OPEN_BRACKET
-          cOut += '['
+            Case aLex[ nI, 1 ] == T_OPEN_BRACKET
+               cOut += '['
 
-        Case aLex[ nI, 1 ] == T_CLOSE_BRACKET
-          cOut += ']'
+            Case aLex[ nI, 1 ] == T_CLOSE_BRACKET
+               cOut += ']'
 
-        Case aLex[ nI, 1 ] == T_COLON
-          cOut += ':'
+            Case aLex[ nI, 1 ] == T_COLON
+               cOut += ':'
 
-        Case aLex[ nI, 1 ] == T_COMMA
-          cOut += ','
+            Case aLex[ nI, 1 ] == T_COMMA
+               cOut += ','
 
-      EndCase
-    Next nI
-  Else
-    Return { aLex[ 1, 2 ] }
-  EndIf
+         EndCase
+      Next nI
+   Else
+      Return { aLex[ 1, 2 ] }
+   EndIf
 
-  Return cOut
+   Return cOut
 
 /**
  * Returns the token stream based on lexical analysis
@@ -225,71 +225,71 @@ Method Minify() Class JSONLexer
  * @return Array
  */
 Method GetTokens() Class JSONLexer
-  ::aTokens := { }
+   ::aTokens := { }
 
-  If ::nSourceSize == 0
-    ::cError := 'No source provided'
-    @Lexer_Error
-  EndIf
+   If ::nSourceSize == 0
+      ::cError := 'No source provided'
+      @Lexer_Error
+   EndIf
 
-  While @Not_Eof
-    Do Case
-      Case @Current_In_Lexer == '{'
-        @Add_Token { T_OPEN_BRACE, Nil, ::nLine, ::nColumn }
-        @Increase_Position
+   While @Not_Eof
+      Do Case
+         Case @Current_In_Lexer == '{'
+            @Add_Token { T_OPEN_BRACE, Nil, ::nLine, ::nColumn }
+            @Increase_Position
 
-      Case @Current_In_Lexer == '}'
-        @Add_Token { T_CLOSE_BRACE, Nil, ::nLine, ::nColumn }
-        @Increase_Position
+         Case @Current_In_Lexer == '}'
+            @Add_Token { T_CLOSE_BRACE, Nil, ::nLine, ::nColumn }
+            @Increase_Position
 
-      Case @Current_In_Lexer == '['
-        @Add_Token { T_OPEN_BRACKET, Nil, ::nLine, ::nColumn }
-        @Increase_Position
+         Case @Current_In_Lexer == '['
+            @Add_Token { T_OPEN_BRACKET, Nil, ::nLine, ::nColumn }
+            @Increase_Position
 
-      Case @Current_In_Lexer == ']'
-        @Add_Token { T_CLOSE_BRACKET, Nil, ::nLine, ::nColumn }
-        @Increase_Position
+         Case @Current_In_Lexer == ']'
+            @Add_Token { T_CLOSE_BRACKET, Nil, ::nLine, ::nColumn }
+            @Increase_Position
 
-      Case @Current_In_Lexer == ','
-        @Add_Token { T_COMMA, Nil, ::nLine, ::nColumn }
-        @Increase_Position
+         Case @Current_In_Lexer == ','
+            @Add_Token { T_COMMA, Nil, ::nLine, ::nColumn }
+            @Increase_Position
 
-      Case @Current_In_Lexer == ':'
-        @Add_Token { T_COLON, Nil, ::nLine, ::nColumn }
-        @Increase_Position
+         Case @Current_In_Lexer == ':'
+            @Add_Token { T_COLON, Nil, ::nLine, ::nColumn }
+            @Increase_Position
 
-      Otherwise
-        // Keyword
-        If ::Keyword()
-          Loop
-        ElseIf @Has_Lexer_Error
-          @Lexer_Error
-        EndIf
+         Otherwise
+            // Keyword
+            If ::Keyword()
+               Loop
+            ElseIf @Has_Lexer_Error
+               @Lexer_Error
+            EndIf
 
-        // Number
-        If ::Number()
-          Loop
-        ElseIf @Has_Lexer_Error
-          @Lexer_Error
-        EndIf
+            // Number
+            If ::Number()
+               Loop
+            ElseIf @Has_Lexer_Error
+               @Lexer_Error
+            EndIf
 
-        // WhiteSpace
-        If ::WhiteSpace()
-          Loop
-        EndIf
+            // WhiteSpace
+            If ::WhiteSpace()
+               Loop
+            EndIf
 
-        If ::String()
-          Loop
-        ElseIf @Has_Lexer_Error
-          @Lexer_Error
-        EndIf
+            If ::String()
+               Loop
+            ElseIf @Has_Lexer_Error
+               @Lexer_Error
+            EndIf
 
-        ::cError := 'No matches for [' + @Current_In_Lexer + ']'
-        @Lexer_Error
-    EndCase
-  End
+            ::cError := 'No matches for [' + @Current_In_Lexer + ']'
+            @Lexer_Error
+      EndCase
+   End
 
-  Return ::aTokens
+   Return ::aTokens
 
 /**
  * Finds a keyword
@@ -298,35 +298,35 @@ Method GetTokens() Class JSONLexer
  * @return Logic
  */
 Method Keyword() Class JSONLexer
-  Local xBuffer := ''
+   Local xBuffer := ''
 
-  If .Not. IsAlpha( @Current_In_Lexer )
-    Return .F.
-  EndIf
+   If .Not. IsAlpha( @Current_In_Lexer )
+      Return .F.
+   EndIf
 
-  While @Not_Eof .And. ( IsAlpha( @Current_In_Lexer ) .Or. IsDigit( @Current_In_Lexer ) )
-    xBuffer += @Current_In_Lexer
-    @Increase_Position
-  End
+   While @Not_Eof .And. ( IsAlpha( @Current_In_Lexer ) .Or. IsDigit( @Current_In_Lexer ) )
+      xBuffer += @Current_In_Lexer
+      @Increase_Position
+   End
 
-  Do Case
-    Case xBuffer == 'true'
-      @Add_Token { T_TRUE, Nil, ::nLine, ::nColumn }
-      Return .T.
+   Do Case
+      Case xBuffer == 'true'
+         @Add_Token { T_TRUE, Nil, ::nLine, ::nColumn }
+         Return .T.
 
-    Case xBuffer == 'false'
-      @Add_Token { T_FALSE, Nil, ::nLine, ::nColumn }
-      Return .T.
+      Case xBuffer == 'false'
+         @Add_Token { T_FALSE, Nil, ::nLine, ::nColumn }
+         Return .T.
 
-    Case xBuffer == 'null'
-      @Add_Token { T_NULL, Nil, ::nLine, ::nColumn }
-      Return .T.
+      Case xBuffer == 'null'
+         @Add_Token { T_NULL, Nil, ::nLine, ::nColumn }
+         Return .T.
 
-    Otherwise
-      ::cError := 'Unexpected identifier [' + xBuffer + ']'
-  EndCase
+      Otherwise
+         ::cError := 'Unexpected identifier [' + xBuffer + ']'
+   EndCase
 
-  Return .F.
+   Return .F.
 
 /**
  * Finds a number
@@ -335,73 +335,73 @@ Method Keyword() Class JSONLexer
  * @return Logic
  */
 Method Number() Class JSONLexer
-  Local xBuffer := ''
-  Local nCursor := ::nPosition
+   Local xBuffer := ''
+   Local nCursor := ::nPosition
 
-  If .Not. ( @Current_In_Lexer == '-' .Or. IsDigit( @Current_In_Lexer ) )
-    Return .F.
-  EndIf
-
-  If @Current_In_Lexer == '-'
-    xBuffer += '-'
-    @Increase_Position
-  EndIf
-
-  // When zero
-  If @Current_In_Lexer == '0'
-    xBuffer += '0'
-    @Increase_Position
-
-    // When we have more numbers after zero
-    If @Not_Eof .And. IsDigit( @Current_In_Lexer )
-      ::cError := 'Invalid number'
+   If .Not. ( @Current_In_Lexer == '-' .Or. IsDigit( @Current_In_Lexer ) )
       Return .F.
-    EndIf
+   EndIf
 
-  ElseIf IsDigit( @Current_In_Lexer )
+   If @Current_In_Lexer == '-'
+      xBuffer += '-'
+      @Increase_Position
+   EndIf
 
-    // Consume while is digit and not EOF
-    While @Not_Eof .And. IsDigit( @Current_In_Lexer )
+   // When zero
+   If @Current_In_Lexer == '0'
+      xBuffer += '0'
+      @Increase_Position
+
+      // When we have more numbers after zero
+      If @Not_Eof .And. IsDigit( @Current_In_Lexer )
+         ::cError := 'Invalid number'
+         Return .F.
+      EndIf
+
+   ElseIf IsDigit( @Current_In_Lexer )
+
+      // Consume while is digit and not EOF
+      While @Not_Eof .And. IsDigit( @Current_In_Lexer )
+         xBuffer += @Current_In_Lexer
+         @Increase_Position
+      End
+
+   Else
+      ::cError := 'Expecting number after minus sign'
+      Return .F.
+   EndIf
+
+   // Optional floating point
+   If @Not_Eof .And. @Current_In_Lexer == '.'
+      xBuffer += '.'
+      @Increase_Position
+      While @Not_Eof .And. IsDigit( @Current_In_Lexer )
+         xBuffer += @Current_In_Lexer
+         @Increase_Position
+      End
+   EndIf
+
+   // Optional [eE][\+\-]
+   If @Not_Eof .And. @Current_In_Lexer $ 'Ee'
       xBuffer += @Current_In_Lexer
       @Increase_Position
-    End
 
-  Else
-    ::cError := 'Expecting number after minus sign'
-    Return .F.
-  EndIf
+      // Optional plus or minus sign
+      If @Not_Eof .And. @Current_In_Lexer $ '+-'
+         xBuffer += @Current_In_Lexer
+         @Increase_Position
+      EndIf
 
-  // Optional floating point
-  If @Not_Eof .And. @Current_In_Lexer == '.'
-    xBuffer += '.'
-    @Increase_Position
-    While @Not_Eof .And. IsDigit( @Current_In_Lexer )
-      xBuffer += @Current_In_Lexer
-      @Increase_Position
-    End
-  EndIf
+      // Rest of the digits
+      While @Not_Eof .And. IsDigit( @Current_In_Lexer )
+         xBuffer += @Current_In_Lexer
+         @Increase_Position
+      End
 
-  // Optional [eE][\+\-]
-  If @Not_Eof .And. @Current_In_Lexer $ 'Ee'
-    xBuffer += @Current_In_Lexer
-    @Increase_Position
+   EndIf
 
-    // Optional plus or minus sign
-    If @Not_Eof .And. @Current_In_Lexer $ '+-'
-      xBuffer += @Current_In_Lexer
-      @Increase_Position
-    EndIf
-
-    // Rest of the digits
-    While @Not_Eof .And. IsDigit( @Current_In_Lexer )
-      xBuffer += @Current_In_Lexer
-      @Increase_Position
-    End
-
-  EndIf
-
-  @Add_Token { T_NUMBER, xBuffer, ::nLine, nCursor }
-  Return .T.
+   @Add_Token { T_NUMBER, xBuffer, ::nLine, nCursor }
+   Return .T.
 
 /**
  * Consumes whitespaces and identifies lines and columns
@@ -410,33 +410,33 @@ Method Number() Class JSONLexer
  * @return Logic
  */
 Method WhiteSpace() Class JSONLexer
-  Local xBuffer := Asc( @Current_In_Lexer )
+   Local xBuffer := Asc( @Current_In_Lexer )
 
-  // Whitespace or tab
-  If xBuffer == 32 .Or. xBuffer == 9
-    @Increase_Position
-    Return .T.
+   // Whitespace or tab
+   If xBuffer == 32 .Or. xBuffer == 9
+      @Increase_Position
+      Return .T.
 
-  // CR, LF or CR + LF
-  ElseIf xBuffer == 13
-    @Increase_Position
-    ::nColumn := 1
+   // CR, LF or CR + LF
+   ElseIf xBuffer == 13
+      @Increase_Position
+      ::nColumn := 1
 
-    If @Not_Eof .And. Asc( @Current_In_Lexer ) == 10
-      ::nPosition++
-    EndIf
+      If @Not_Eof .And. Asc( @Current_In_Lexer ) == 10
+         ::nPosition++
+      EndIf
 
-    ::nLine++
-    Return .T.
+      ::nLine++
+      Return .T.
 
-  ElseIf xBuffer == 10
-    @Increase_Position
-    ::nColumn := 1
-    ::nLine++
-    Return .T.
-  EndIf
+   ElseIf xBuffer == 10
+      @Increase_Position
+      ::nColumn := 1
+      ::nLine++
+      Return .T.
+   EndIf
 
-  Return .F.
+   Return .F.
 
 /**
  * Parses a string
@@ -445,79 +445,79 @@ Method WhiteSpace() Class JSONLexer
  * @return Logic
  */
 Method String() Class JSONLexer
-  Local xBuffer := ''
-  Local nCursor := ::nPosition
-  Local nHelper
+   Local xBuffer := ''
+   Local nCursor := ::nPosition
+   Local nHelper
 
-  If .Not. ( @Current_In_Lexer == '"' )
-    Return .F.
-  EndIf
+   If .Not. ( @Current_In_Lexer == '"' )
+      Return .F.
+   EndIf
 
-  @Increase_Position
+   @Increase_Position
 
-  // Close string when reach {"}
-  While @Not_Eof .And. @Current_In_Lexer <> '"'
-    If @Current_In_Lexer == '\'
-      xBuffer += '\'
-      @Increase_Position
+   // Close string when reach {"}
+   While @Not_Eof .And. @Current_In_Lexer <> '"'
+      If @Current_In_Lexer == '\'
+         xBuffer += '\'
+         @Increase_Position
 
-      If @Current_In_Lexer $ '"\/bfnrt'
-        xBuffer += @Current_In_Lexer
-        @Increase_Position
-      ElseIf @Current_In_Lexer == 'u'
-        xBuffer += 'u'
-        @Increase_Position
-        nHelper := 1
-
-        While nHelper <= 4
-          If .Not. @Not_Eof
-            ::cError := 'Expecting 4 hexadecimal digits. Found EOF'
-            Return .F.
-          EndIf
-
-          If IsDigit( @Current_In_Lexer ) .Or. @Current_In_Lexer $ 'ABCDEFabcdef'
+         If @Current_In_Lexer $ '"\/bfnrt'
             xBuffer += @Current_In_Lexer
             @Increase_Position
-            nHelper++
-          Else
-            ::cError := 'Expecting an hexadecimal digit. Found ' + @Current_In_Lexer
+         ElseIf @Current_In_Lexer == 'u'
+            xBuffer += 'u'
+            @Increase_Position
+            nHelper := 1
+
+            While nHelper <= 4
+               If .Not. @Not_Eof
+                  ::cError := 'Expecting 4 hexadecimal digits. Found EOF'
+                  Return .F.
+               EndIf
+
+               If IsDigit( @Current_In_Lexer ) .Or. @Current_In_Lexer $ 'ABCDEFabcdef'
+                  xBuffer += @Current_In_Lexer
+                  @Increase_Position
+                  nHelper++
+               Else
+                  ::cError := 'Expecting an hexadecimal digit. Found ' + @Current_In_Lexer
+                  Return .F.
+               EndIf
+            End
+         Else
+            ::cError := 'Unrecognized escaped character'
             Return .F.
-          EndIf
-        End
+         EndIf
+
       Else
-        ::cError := 'Unrecognized escaped character'
-        Return .F.
+         xBuffer += @Current_In_Lexer
+         @Increase_Position
       EndIf
+   End
 
-    Else
-      xBuffer += @Current_In_Lexer
-      @Increase_Position
-    EndIf
-  End
+   If .Not. @Not_Eof .Or. @Current_In_Lexer <> '"'
+      ::cError := 'Expecting string terminator'
+      Return .F.
+   EndIf
 
-  If .Not. @Not_Eof .Or. @Current_In_Lexer <> '"'
-    ::cError := 'Expecting string terminator'
-    Return .F.
-  EndIf
-
-  @Increase_Position
-  @Add_Token { T_STRING, xBuffer, ::nLine, nCursor }
-  Return .T.
+   @Increase_Position
+   @Add_Token { T_STRING, xBuffer, ::nLine, nCursor }
+   Return .T.
 
 Function Main
-  Local aResult := JSONLexer():New( GetJSON() ):GetTokens()
-  Local nI
+   Local aResult := JSONLexer():New( GetJSON() ):GetTokens()
+   Local nI
 
-  OutStd( JSONLexer():New( GetJSON() ):Minify() )
+   OutStd( JSONLexer():New( GetJSON() ):Minify() )
 
-  For nI := 1 To Len( aResult )
-    OutStd( '[' + aResult[ nI, 1 ] + ']' )
-  Next nI
+   For nI := 1 To Len( aResult )
+      OutStd( '[' + aResult[ nI, 1 ] + ']' )
+   Next nI
 
 Function GetJSON
-  Local nHandler  := fOpen( './json/main.json', FO_READWRITE + FO_SHARED )
-  Local nSize     := Directory( './json/main.json' )[ 1, 2 ]
-  Local xBuffer   := Space( nSize )
+   Local nHandler  := fOpen( './json/main.json', FO_READWRITE + FO_SHARED )
+   Local nSize     := Directory( './json/main.json' )[ 1, 2 ]
+   Local xBuffer   := Space( nSize )
 
-  fRead( nHandler, @xBuffer, nSize )
-  Return xBuffer
+   fRead( nHandler, @xBuffer, nSize )
+   Return xBuffer
