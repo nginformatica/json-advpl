@@ -1,11 +1,4 @@
 /**
- * TODO List:
- * - The parser should allow opening a file for parsing
- * - We must have a class named JSON to expose the operations for the user
- * - We need to allow converting an object to a JSON also
- */
-
-/**
  * JSON parser (according to RFC 4627)
  *
  * This is a full parser compatible with Harbour and AdvPL.
@@ -17,6 +10,7 @@
  * @copyright 2016 - NG Informática - TOTVS Software Partner
  */
 #include 'fileio.ch'
+#include 'json.ch'
 #ifdef __HARBOUR__
    #include 'hbclass.ch'
 #else
@@ -40,10 +34,6 @@
 #define TOKEN_VALUE  2
 #define TOKEN_LINE   3
 #define TOKEN_COLUMN 4
-
-// Syntactic additions for associative arrays
-#xtranslate \[ \# <cKey> \] => :Get( <cKey> )
-#xtranslate \[ \# <cKey> \] := <xValue> => :Set( <cKey>, <xValue> )
 
 // Syntactic additions for the lexer
 #xtranslate @Lexer_Error Line <line> Column <column> => Return JSONSyntaxError():New( Self:cError, <line>, <column> )
@@ -188,14 +178,12 @@ Method Set( cKey, xValue ) Class JSONObject
    Local nI
 
    // When the key is found, update. Otherwise, create
-   If nSize <> 0
-      For nI := 1 To nSize
-         If ::aKeys[ nI ] == cKey
-            ::aValues[ nI ] := xValue
-            Return
-         EndIf
-      Next nI
-   End
+   For nI := 1 To nSize
+      If ::aKeys[ nI ] == cKey
+         ::aValues[ nI ] := xValue
+         Return
+      EndIf
+   Next nI
 
    aAdd( ::aKeys, cKey )
    aAdd( ::aValues, xValue )
@@ -212,13 +200,11 @@ Method Get( cKey ) Class JSONObject
    Local nSize := Len( ::aKeys )
    Local nI
 
-   If nSize <> 0
-      For nI := 1 To nSize
-         If ::aKeys[ nI ] == cKey
-            Return ::aValues[ nI ]
-         EndIf
-      Next nI
-   End
+   For nI := 1 To nSize
+      If ::aKeys[ nI ] == cKey
+         Return ::aValues[ nI ]
+      EndIf
+   Next nI
 
    Return Nil
 
@@ -298,7 +284,7 @@ Method Minify() Class JSONLexer
                cOut += '"' + xHelper + '"'
 
             Case aLex[ nI, 1 ] == T_NUMBER
-               cOut += Str( aLex[ nI, 2 ] )
+               cOut += AllTrim( Str( aLex[ nI, 2 ] ) )
 
             Case aLex[ nI, 1 ] == T_TRUE
                cOut += 'true'
@@ -871,6 +857,7 @@ Class JSON
    Method Parse()
    Method Stringify()
    Method Minify()
+   Method File()
 EndClass
 
 /**
@@ -902,31 +889,131 @@ Method Parse() Class JSON
  * @return Character
  */
 Method Stringify() Class JSON
+   Return ToString( ::xData )
+
+Static Function ToString( xItem )
    Local cResult := ''
-   Local cType   := ValType( ::xData )
+   Local cType   := ValType( xItem )
+   Local xHelper := ''
+   Local nI
 
-   // TODO: Implement stringify for JSON
+   Do Case
+      Case cType == 'U'
+         cResult += 'null'
 
-   Return cResult
+      Case cType == 'N'
+         cResult += Str( xItem )
+
+      Case cType == 'C'
+         xHelper := StrTran( xItem, '\', '\\' )
+         xHelper := StrTran( xHelper, '"', '\"')
+         cResult += '"' + xHelper + '"'
+
+      Case cType == 'L'
+         cResult := IIf( xItem, 'true', 'false' )
+
+      Case cType == 'A'
+         cResult += '['
+
+         For nI := 1 To Len( xItem )
+            cResult += ToString( xItem[ nI ] )
+
+            If nI < Len( xItem )
+               cResult += ','
+            EndIf
+         Next nI
+
+         cResult += ']'
+
+      Case cType == 'O'
+         cResult += '{'
+
+         For nI := 1 To Len( xItem:aKeys )
+            cResult += ToString( xItem:aKeys[ nI ] )
+            cResult += ':'
+            cResult += ToString( xItem:aValues[ nI ] )
+
+            If nI < Len( xItem:aKeys )
+               cResult += ','
+            EndIf
+         Next nI
+
+         cResult += '}'
+
+   EndCase
+
+   Return AllTrim( cResult )
 
 /**
  * Minifies a JSON string
+ * @class JSON
+ * @method Minify
+ * @return Character
  */
 Method Minify() Class JSON
    Return JSONLexer():New( ::xData ):Minify()
 
-/// TESTS!
-Function Main
+/**
+ * Reads a JSON file and parses it
+ * @class JSON
+ * @method File
+ * @return JSONObject
+ */
+Method File() Class JSON
+   ::xData := GetFileContents( ::xData )
+   Return Self
+
+/**
+ * BEGIN SECTION TEST
+ */
+Static Function TestMinify
+   Local cJSON     := '{    "some":      true,      [ "big", 1 ] }'
+   Local cMinified := JSON():New( cJSON ):Minify()
+
+   OutStd( cMinified == '{"some":true,["big",1]}' )
+   Return
+
+Static Function TestParse
+   Local oParser := JSON():New( '{ "data": [ { "name": "Marcelo", "age": 19 } ] }' ):Parse()
+
+   If oParser:IsJSON()
+      OutStd( oParser:Object()[#'data'][ 1 ][#'name'] == "Marcelo" )
+      OutStd( oParser:Object()[#'data'][ 1 ][#'age'] == 19 )
+   Else
+      OutStd( oParser:Error() )
+   EndIf
+   Return
+
+Static Function TestFile()
+   Local oParser := JSON():New( './json/main.json' ):File():Parse()
+
+   If oParser:IsJSON()
+      OutStd( oParser:Object()[#'children'][ 1 ][#'children'][ 1 ][#'description'] == 'Corretiva' )
+   Else
+      OutStd( oParser )
+   EndIf
+   Return
+
+Static Function TestStringify()
    Local oJSON := JSONObject():New()
 
    oJSON[#'data'] := { }
+   oJSON[#'sub' ] := 12.4
 
    aAdd( oJSON[#'data'], JSONObject():New() )
 
    oJSON[#'data'][ 1 ][#'name'] := 'Marcelo'
+   oJSON[#'data'][ 1 ][#'age']  := 19
 
-   OutStd( oJSON[#'data'][ 1 ][#'name'] )
+   OutStd( JSON():New( oJSON ):Stringify() == '{"data":[{"name":"Marcelo","age":19}],"sub":12.4}' )
+   Return
 
-
+/// TESTS!
+Function Main
+   Local oJSON := JSONObject():New()
+   TestMinify()
+   TestParse()
+   TestFile()
+   TestStringify()
    Return
 
