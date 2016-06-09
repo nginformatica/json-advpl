@@ -1,10 +1,19 @@
 /**
+ * TODO List:
+ * - The parser should allow opening a file for parsing
+ * - We must have a class named JSON to expose the operations for the user
+ * - We need to allow converting an object to a JSON also
+ */
+
+/**
  * JSON parser (according to RFC 4627)
  *
  * This is a full parser compatible with Harbour and AdvPL.
  * It includes a fully functional lexer, a parser and a code generator.
  *
  * @author Marcelo Camargo <marcelo.camargo@ngi.com.br>
+ *                         <marcelocamargo@linuxmail.org>
+ * @since 2016-06-07
  * @copyright 2016 - NG Informática - TOTVS Software Partner
  */
 #include 'fileio.ch'
@@ -28,17 +37,100 @@
 #define T_STRING        "T_STRING"
 #define T_ERROR         "T_ERROR"
 
+#define TOKEN_TYPE   1
+#define TOKEN_VALUE  2
+#define TOKEN_LINE   3
+#define TOKEN_COLUMN 4
+
 // Syntactic additions for associative arrays
 #xtranslate \[ \# <cKey> \] => :Get( <cKey> )
 #xtranslate \[ \# <cKey> \] := <xValue> => :Set( <cKey>, <xValue> )
 
 // Syntactic additions for the lexer
-#xtranslate @Lexer_Error => Return { { T_ERROR, Self:cError } }
+#xtranslate @Lexer_Error Line <line> Column <column> => Return JSONSyntaxError():New( Self:cError, <line>, <column> )
 #xtranslate @Has_Lexer_Error => !Empty( Self:cError )
 #xtranslate @Add_Token <aToken> => aAdd( Self:aTokens, <aToken> )
 #xtranslate @Not_Eof => ( Self:nPosition <= Self:nSourceSize )
 #xtranslate @Current_In_Lexer => Self:aCharList\[ Self:nPosition \]
 #xtranslate @Increase_Position => Self:nPosition++; Self:nColumn++
+
+// Syntactic additions for the parser
+#xtranslate @Current_In_Parser => Self:xStream\[ Self:nIndex \]
+#xtranslate @Consume => Self:nIndex++
+#xtranslate @Match <cToken> => ;;
+   If Self:nIndex <= Len( Self:xStream ) .And. Self:xStream\[ Self:nIndex, 1 \] == <cToken>    ;;
+         Self:xBuffer := Self:xStream\[ Self:nIndex \]    ;;
+         Self:nIndex++                                    ;;
+   Else                                                   ;;
+      Self:lHasError := .T.                               ;;
+      Return JSONSyntaxError():New( 'Expecting ' + <cToken> + '. Got ' + IIf( Self:nIndex <= Len( Self:xStream ),  Self:xStream\[ Self:nIndex \]\[ 1 \], 'EOF' ), ;
+                                    IIf( Self:nIndex <= Len( Self:xStream ), Self:xStream\[ Self:nIndex \]\[ 3 \], Self:xStream\[ Self:nIndex - 1 \]\[ 3 \]),     ;
+                                    IIf( Self:nIndex <= Len( Self:xStream ), Self:xStream\[ Self:nIndex \]\[ 4 \], Self:xStream\[ Self:nIndex - 1 \]\[ 3 \]) )   ;;
+   EndIf
+
+
+
+// Tell when we got syntax error in a structure. It is different from Harbour
+// to AdvPL
+#ifdef __HARBOUR__
+   #xtranslate @Has_Syntax_Error <xObj> => ValType( <xObj> ) == 'O' .And. ;
+      __objHasData( <xObj>, 'cMessage' )
+#else
+   #xtranslate @Has_Syntax_Error <xObj> => ValType( <xObj> ) == 'O' .And. ;
+      Upper( GetClassName( <xObj> ) ) == 'JSONSyntaxError'
+#endif
+
+#ifndef CRLF
+   #define CRLF Chr( 13 ) + Chr( 10 )
+#endif
+
+/**
+ * Representation of a syntactic error in JSON.
+ * @class JSONSyntaxError
+ */
+Class JSONSyntaxError
+   Data cMessage Init ''
+   Data nLine    Init 1
+   Data nColumn  Init 1
+
+   Method New( cMessage, nLine, nColumn ) Constructor
+   Method Format()
+   Method IsJSON()
+EndClass
+
+/**
+ * Instance for JSONSyntaxError.
+ * @class JSONSyntaxError
+ * @method New
+ * @return JSONSyntaxError
+ */
+Method New( cMessage, nLine, nColumn ) Class JSONSyntaxError
+   ::cMessage := cMessage
+   ::nLine    := nLine
+   ::nColumn  := nColumn
+   Return Self
+
+/**
+ * Formats a syntax error message.
+ * @class JSONSyntaxError
+ * @method Format
+ * @return Character
+ */
+Method Format() Class JSONSyntaxError
+   Local cStr := '*** JSON syntax error! '
+   cStr += ::cMessage + CRLF
+   cStr += '    Line:   ' + Str( ::nLine ) + CRLF
+   cStr += '    Column: ' + Str( ::nColumn ) + CRLF
+   Return cStr
+
+/**
+ * Specifies that a JSONSyntaxError is not a JSON
+ * @class JSONSyntaxError
+ * @method IsJSON
+ * @return Logic
+ */
+Method IsJSON() Class JSONSyntaxError
+   Return .F.
 
 /**
  * Representation of an associative array. We also extend the syntax to allow
@@ -229,7 +321,7 @@ Method GetTokens() Class JSONLexer
 
    If ::nSourceSize == 0
       ::cError := 'No source provided'
-      @Lexer_Error
+      @Lexer_Error Line 1 Column 1
    EndIf
 
    While @Not_Eof
@@ -263,14 +355,14 @@ Method GetTokens() Class JSONLexer
             If ::Keyword()
                Loop
             ElseIf @Has_Lexer_Error
-               @Lexer_Error
+               @Lexer_Error Line ::nLine Column ::nColumn
             EndIf
 
             // Number
             If ::Number()
                Loop
             ElseIf @Has_Lexer_Error
-               @Lexer_Error
+               @Lexer_Error Line ::nLine Column ::nColumn
             EndIf
 
             // WhiteSpace
@@ -281,11 +373,11 @@ Method GetTokens() Class JSONLexer
             If ::String()
                Loop
             ElseIf @Has_Lexer_Error
-               @Lexer_Error
+               @Lexer_Error Line ::nLine Column ::nColumn
             EndIf
 
             ::cError := 'No matches for [' + @Current_In_Lexer + ']'
-            @Lexer_Error
+            @Lexer_Error Line ::nLine Column ::nColumn
       EndCase
    End
 
@@ -298,7 +390,9 @@ Method GetTokens() Class JSONLexer
  * @return Logic
  */
 Method Keyword() Class JSONLexer
-   Local xBuffer := ''
+   Local xBuffer       := ''
+   Local nCursorLine   := ::nLine
+   Local nCursorColumn := ::nColumn
 
    If .Not. IsAlpha( @Current_In_Lexer )
       Return .F.
@@ -323,7 +417,9 @@ Method Keyword() Class JSONLexer
          Return .T.
 
       Otherwise
-         ::cError := 'Unexpected identifier [' + xBuffer + ']'
+         ::nLine   := nCursorLine
+         ::nColumn := nCursorColumn
+         ::cError  := 'Unexpected identifier [' + xBuffer + ']'
    EndCase
 
    Return .F.
@@ -335,8 +431,10 @@ Method Keyword() Class JSONLexer
  * @return Logic
  */
 Method Number() Class JSONLexer
-   Local xBuffer := ''
-   Local nCursor := ::nPosition
+   Local xBuffer       := ''
+   Local nCursor       := ::nPosition
+   Local nCursorLine   := ::nLine
+   Local nCursorColumn := ::nColumn
 
    If .Not. ( @Current_In_Lexer == '-' .Or. IsDigit( @Current_In_Lexer ) )
       Return .F.
@@ -354,7 +452,9 @@ Method Number() Class JSONLexer
 
       // When we have more numbers after zero
       If @Not_Eof .And. IsDigit( @Current_In_Lexer )
-         ::cError := 'Invalid number'
+         ::nLine   := nCursorLine
+         ::nColumn := nCursorColumn
+         ::cError  := 'Invalid number'
          Return .F.
       EndIf
 
@@ -367,6 +467,8 @@ Method Number() Class JSONLexer
       End
 
    Else
+      ::nLine   := nCursorLine
+      ::nColumn := nCursorColumn
       ::cError := 'Expecting number after minus sign'
       Return .F.
    EndIf
@@ -504,15 +606,93 @@ Method String() Class JSONLexer
    @Add_Token { T_STRING, xBuffer, ::nLine, nCursor }
    Return .T.
 
+/**
+ * The parser is feed by the lexer and generates an abstract object
+ * representation of the JSON.
+ *
+ * @class JSONParser
+ */
+Class JSONParser
+   Data xStream   Init { }
+   Data nIndex    Init 1
+   Data lHasError Init .F.
+   Data oAST
+   Data xBuffer
+
+   Method New( xStream ) Constructor
+   Method IsJSON()
+   Method Object()
+   Method Parse()
+EndClass
+
+/**
+ * Instance for JSONParser
+ * @class JSONParser
+ * @method New
+ * @param xStream Array | Object the token stream or a syntactic error
+ * @return JSONParser
+ */
+Method New( xStream ) Class JSONParser
+   ::xStream := xStream
+   Return Self
+
+/**
+ * Returns whether the JSON is valid
+ * @class JSONParser
+ * @method IsJSON
+ * @return Logic
+ */
+Method IsJSON() Class JSONParser
+   Return .T.
+
+/**
+ * Returns the parsed JSON as object if it is valid. Otherwise, an empty object.
+ * @class JSONParser
+ * @method Object
+ * @return JSONObject
+ */
+Method Object() Class JSONParser
+   If ::IsJSON()
+      Return ::oAST
+   EndIf
+   Return JSONObject():New()
+
+/**
+ * Parses the JSON and stores its data in the object.
+ * @class JSONParser
+ * @method Parse
+ * @return JSONParser
+ */
+Method Parse() Class JSONParser
+   // Capture syntax error from the lexer. Our parser is also a functor,
+   // being data Parser = Maybe JSONObject | JSONSyntaxError
+   If @Has_Syntax_Error ::xStream
+      Return ::xStream
+   EndIf
+   ::oAST := JSONObject():New()
+
+   If @Current_In_Parser[ 1 ] == T_OPEN_BRACE
+      @Match T_OPEN_BRACE
+   ElseIf @Current_In_Parser[ 1 ] == T_OPEN_BRACKET
+      @Match T_OPEN_BRACKET
+   Else
+      @Match T_OPEN_BRACE + ' OR ' + T_OPEN_BRACKET
+   EndIf
+
+   Return Self
+
+/// TESTS!
 Function Main
-   Local aResult := JSONLexer():New( GetJSON() ):GetTokens()
-   Local nI
+   Local xResult := JSONLexer():New( GetJSON() ):GetTokens()
+   Local oResult := JSONParser():New( xResult ):Parse()
 
-   OutStd( JSONLexer():New( GetJSON() ):Minify() )
+   If oResult:IsJSON()
+      OutStd( "JSON Valido ")
+   Else
+      OutStd( oResult:Format() )
+   EndIf
 
-   For nI := 1 To Len( aResult )
-      OutStd( '[' + aResult[ nI, 1 ] + ']' )
-   Next nI
+   Return
 
 Function GetJSON
    Local nHandler  := fOpen( './json/main.json', FO_READWRITE + FO_SHARED )
