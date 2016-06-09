@@ -76,7 +76,6 @@ Você também pode acessar objetos via `:Get('name')` ao invés de `[#'name']` e
 Local oParser := JSON():New( './main.json' ):File():Parse()
 // "Corretiva"
 oParser:Object()[#'children'][ 1 ][#'children'][ 1 ][#'description']
-EndIf
 ```
 
 #### Transformar um objeto em uma string
