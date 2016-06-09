@@ -35,7 +35,6 @@
 #define T_NULL          "T_NULL"
 #define T_NUMBER        "T_NUMBER"
 #define T_STRING        "T_STRING"
-#define T_ERROR         "T_ERROR"
 
 #define TOKEN_TYPE   1
 #define TOKEN_VALUE  2
@@ -85,6 +84,26 @@
 #endif
 
 /**
+ * Returns the content of a file as string
+ * @param cFileName Character
+ * @return Character
+ */
+Static Function GetFileContents( cFileName )
+   Local nHandler  := fOpen( cFileName, FO_READWRITE + FO_SHARED )
+   Local nSize
+   Local xBuffer
+
+   If nHandler == -1
+      Return Nil
+   EndIf
+
+   nSize   := Directory( cFileName )[ 1, 2 ]
+   xBuffer := Space( nSize )
+
+   fRead( nHandler, @xBuffer, nSize )
+   Return xBuffer
+
+/**
  * Representation of a syntactic error in JSON.
  * @class JSONSyntaxError
  */
@@ -94,7 +113,7 @@ Class JSONSyntaxError
    Data nColumn  Init 1
 
    Method New( cMessage, nLine, nColumn ) Constructor
-   Method Format()
+   Method Error()
    Method IsJSON()
 EndClass
 
@@ -113,10 +132,10 @@ Method New( cMessage, nLine, nColumn ) Class JSONSyntaxError
 /**
  * Formats a syntax error message.
  * @class JSONSyntaxError
- * @method Format
+ * @method Error
  * @return Character
  */
-Method Format() Class JSONSyntaxError
+Method Error() Class JSONSyntaxError
    Local cStr := '*** JSON syntax error! '
    cStr += ::cMessage + CRLF
    cStr += '    Line:   ' + Str( ::nLine ) + CRLF
@@ -204,7 +223,7 @@ Method Get( cKey ) Class JSONObject
    Return Nil
 
 /**
- * The lexer returns a stream of tokens or one single token containing { T_ERROR }
+ * The lexer returns a stream of tokens or a syntax error
  *
  * @class JSONLexer
  */
@@ -264,16 +283,22 @@ Method StrToList( cStr ) Class JSONLexer
 Method Minify() Class JSONLexer
    Local aLex := ::GetTokens()
    Local cOut := ''
+   Local xHelper
    Local nI
 
-   If .Not. ( Len( aLex ) == 1 .And. aLex[ 1, 1 ] == T_ERROR )
+   // When it is a valid process, we get an array
+   If ValType( aLex ) == 'A'
       For nI := 1 To Len( aLex )
          Do Case
             Case aLex[ nI, 1 ] == T_STRING
-               cOut += '"' + aLex[ nI, 2 ] + '"'
+               xHelper := aLex[ nI, 2 ]
+               xHelper := StrTran( xHelper, '\', '\\"' )
+               xHelper := StrTran( xHelper, '"', '\"' )
+
+               cOut += '"' + xHelper + '"'
 
             Case aLex[ nI, 1 ] == T_NUMBER
-               cOut += aLex[ nI, 2 ]
+               cOut += Str( aLex[ nI, 2 ] )
 
             Case aLex[ nI, 1 ] == T_TRUE
                cOut += 'true'
@@ -305,7 +330,7 @@ Method Minify() Class JSONLexer
          EndCase
       Next nI
    Else
-      Return { aLex[ 1, 2 ] }
+      Return aLex
    EndIf
 
    Return cOut
@@ -502,7 +527,9 @@ Method Number() Class JSONLexer
 
    EndIf
 
-   @Add_Token { T_NUMBER, xBuffer, ::nLine, nCursor }
+   // Note: AdvPL and Harbour don't support e-notation. The value is, therefore,
+   // in this moment, ignored
+   @Add_Token { T_NUMBER, Val( xBuffer ), ::nLine, nCursor }
    Return .T.
 
 /**
@@ -602,6 +629,17 @@ Method String() Class JSONLexer
       Return .F.
    EndIf
 
+   // Process buffer after
+   xBuffer := StrTran( xBuffer, '\t', Chr( 9 ) )
+   xBuffer := StrTran( xBuffer, '\b', Chr( 8 ) )
+   xBuffer := StrTran( xBuffer, '\r', Chr( 13 ) )
+   xBuffer := StrTran( xBuffer, '\n', Chr( 10 ) )
+   xBuffer := StrTran( xBuffer, '\f', Chr( 12 ) )
+   xBuffer := StrTran( xBuffer, '\/', '/' )
+   xBuffer := StrTran( xBuffer, '\"', '"')
+   // Currently, we are ignoring unicode characters such as \u0000 because
+   // I didn't find support neither in AdvPL nor Harbour
+
    @Increase_Position
    @Add_Token { T_STRING, xBuffer, ::nLine, nCursor }
    Return .T.
@@ -616,13 +654,17 @@ Class JSONParser
    Data xStream   Init { }
    Data nIndex    Init 1
    Data lHasError Init .F.
-   Data oAST
+   Data xAST
    Data xBuffer
 
    Method New( xStream ) Constructor
    Method IsJSON()
    Method Object()
    Method Parse()
+
+   Method _Object()
+   Method _Array()
+   Method _Value()
 EndClass
 
 /**
@@ -649,12 +691,13 @@ Method IsJSON() Class JSONParser
  * Returns the parsed JSON as object if it is valid. Otherwise, an empty object.
  * @class JSONParser
  * @method Object
- * @return JSONObject
+ * @return JSONObject | Array
  */
 Method Object() Class JSONParser
    If ::IsJSON()
-      Return ::oAST
+      Return ::xAST
    EndIf
+
    Return JSONObject():New()
 
 /**
@@ -669,35 +712,221 @@ Method Parse() Class JSONParser
    If @Has_Syntax_Error ::xStream
       Return ::xStream
    EndIf
-   ::oAST := JSONObject():New()
 
+   // Object
    If @Current_In_Parser[ 1 ] == T_OPEN_BRACE
-      @Match T_OPEN_BRACE
+      ::xAST := ::_Object()
+      If @Has_Syntax_Error ::xAST
+         Return ::xAST
+      EndIf
+
+   // Array
    ElseIf @Current_In_Parser[ 1 ] == T_OPEN_BRACKET
-      @Match T_OPEN_BRACKET
+      ::xAST := ::_Array()
+      If @Has_Syntax_Error ::xAST
+         Return ::xAST
+      EndIf
+
+   // Syntax error
    Else
       @Match T_OPEN_BRACE + ' OR ' + T_OPEN_BRACKET
    EndIf
 
    Return Self
 
+/**
+ * Object production for the parser
+ * @class JSONParser
+ * @method _Object
+ * @return JSONObject
+ */
+Method _Object() Class JSONParser
+   Local oObject := JSONObject():New()
+   Local cKey
+   Local xValue
+
+   @Match T_OPEN_BRACE
+
+   If @Current_In_Parser[ 1 ] == T_STRING
+      @Match T_STRING
+      cKey := ::xBuffer[ 2 ]
+
+      @Match T_COLON
+      xValue := ::_Value()
+
+      If @Has_Syntax_Error xValue
+         Return xValue
+      EndIf
+
+      oObject:Set( cKey, xValue )
+
+      While @Current_In_Parser[ 1 ] == T_COMMA
+         @Consume
+         @Match T_STRING
+         cKey := ::xBuffer[ 2 ]
+         @Match T_COLON
+         xValue := ::_Value()
+
+         If @Has_Syntax_Error xValue
+            Return xValue
+         EndIf
+
+         oObject:Set( cKey, xValue )
+      End
+
+   EndIf
+
+   @Match T_CLOSE_BRACE
+
+   Return oObject
+
+/**
+ * Array production for the parser
+ * @class JSONParser
+ * @method _Array
+ * @return Array
+ */
+Method _Array() Class JSONParser
+   Local aResults := { }
+   Local xValue
+
+   @Match T_OPEN_BRACKET
+
+   If @Current_In_Parser[ 1 ] <> T_CLOSE_BRACKET
+      xValue := ::_Value()
+
+      If @Has_Syntax_Error xValue
+         Return xValue
+      EndIf
+
+      aAdd( aResults, xValue )
+
+      While @Current_In_Parser[ 1 ] == T_COMMA
+         @Consume
+         xValue := ::_Value()
+
+         If @Has_Syntax_Error xValue
+            Return xValue
+         EndIf
+
+         aAdd( aResults, xValue )
+      End
+
+   EndIf
+
+   @Match T_CLOSE_BRACKET
+   Return aResults
+
+/**
+ * Value production for the parser
+ * @class JSONParser
+ * @method _Value
+ * @return Character | Logic | Number
+ */
+Method _Value() Class JSONParser
+
+   Do Case
+      Case @Current_In_Parser[ 1 ] == T_NUMBER
+         @Match T_NUMBER
+         Return ::xBuffer[ 2 ]
+
+      Case @Current_In_Parser[ 1 ] == T_STRING
+         @Match T_STRING
+         Return ::xBuffer[ 2 ]
+
+      Case @Current_In_Parser[ 1 ] == T_TRUE
+         @Consume
+         Return .T.
+
+      Case @Current_In_Parser[ 1 ] == T_FALSE
+         @Consume
+         Return .F.
+
+      Case @Current_In_Parser[ 1 ] == T_NULL
+         @Consume
+         Return Nil
+
+      Case @Current_In_Parser[ 1 ] == T_OPEN_BRACE
+         Return ::_Object()
+
+      Case @Current_In_Parser[ 1 ] == T_OPEN_BRACKET
+         Return ::_Array()
+
+   EndCase
+
+   @Match 'value (string, boolean, object, number or array)'
+
+   Return Nil
+
+/**
+ * The class that will use the JSONLexer and the JSONParser to be exposed
+ * to the developer level.
+ *
+ * @class JSON
+ */
+Class JSON
+   Data xData
+
+   Method New( xData ) Constructor
+   Method Parse()
+   Method Stringify()
+   Method Minify()
+EndClass
+
+/**
+ * Creates a JSON object
+ * @class JSON
+ * @method New
+ * @param Any
+ * @return JSON
+ */
+Method New( xData ) Class JSON
+   ::xData := xData
+   Return Self
+
+/**
+ * Parses a JSON
+ * @class JSON
+ * @method New
+ * @return JSONObject | Array
+ */
+Method Parse() Class JSON
+   Local aLexer  := JSONLexer():New( ::xData ):GetTokens()
+   Local xResult := JSONParser():New( aLexer ):Parse()
+   Return xResult
+
+/**
+ * Converts a JSON object o a string
+ * @class JSON
+ * @method Stringify
+ * @return Character
+ */
+Method Stringify() Class JSON
+   Local cResult := ''
+   Local cType   := ValType( ::xData )
+
+   // TODO: Implement stringify for JSON
+
+   Return cResult
+
+/**
+ * Minifies a JSON string
+ */
+Method Minify() Class JSON
+   Return JSONLexer():New( ::xData ):Minify()
+
 /// TESTS!
 Function Main
-   Local xResult := JSONLexer():New( GetJSON() ):GetTokens()
-   Local oResult := JSONParser():New( xResult ):Parse()
+   Local oJSON := JSONObject():New()
 
-   If oResult:IsJSON()
-      OutStd( "JSON Valido ")
-   Else
-      OutStd( oResult:Format() )
-   EndIf
+   oJSON[#'data'] := { }
+
+   aAdd( oJSON[#'data'], JSONObject():New() )
+
+   oJSON[#'data'][ 1 ][#'name'] := 'Marcelo'
+
+   OutStd( oJSON[#'data'][ 1 ][#'name'] )
+
 
    Return
 
-Function GetJSON
-   Local nHandler  := fOpen( './json/main.json', FO_READWRITE + FO_SHARED )
-   Local nSize     := Directory( './json/main.json' )[ 1, 2 ]
-   Local xBuffer   := Space( nSize )
-
-   fRead( nHandler, @xBuffer, nSize )
-   Return xBuffer
