@@ -95,4 +95,51 @@ oJSON[#'data'][ 1 ][#'age']  := 19
 JSON():New( oJSON ):Stringify()
 ```
 
+#### Ler e escrever dados por JSON
+```delphi
+Function JSONFromST1
+  Local aResults := { }
+  Local nI   := 1
+
+  dbSelectArea( 'ST1' )
+  dbGoTop()
+
+  While !Eof()
+    aAdd( aResults, JSONObject():New() )
+    aResults[ nI ][#'codigo'] := ST1->T1_CODFUNC
+    aResults[ nI ][#'nome']   := ST1->T1_NOME
+    nI++
+    dbSkip()
+  End
+
+  dbCloseArea()
+
+  Return JSON():New( aResults ):Stringify()
+
+Function JSONToST1( cJSON )
+  Local oParser := JSON():New( cJSON ):Parse()
+  Local oJSON
+
+  If oParser:IsJSON()
+    aJSON := oParser:Object()
+
+    dbSelectArea( 'ST1' )
+    For nI := 1 To Len( aJSON )
+      RecLock( 'ST1', .T. )
+      ST1->T1_CODIGO := aJSON[ nI ][#'codigo']
+      ST1->T1_NOME   := aJSON[ nI ][#'nome']
+      MsUnlock()
+    Next nI
+    dbCloseArea()
+
+  Else
+    Return .F.
+  EndIf
+
+  Return .T.
+
+Function WriteMetaData
+  Return JSONToST1( '[{"nome":"Richard", "codigo": "01"},{"nome":"John","codigo":"02"}]' )
+```
+
 Elaborado por Marcelo Camargo em 09/06/2016
