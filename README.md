@@ -23,7 +23,7 @@ EndClass
 
 ### Casos de uso
 
-A maneira mais simpels de utilizar é usando a função `ParseJSON`. Ela recebe
+A maneira mais simples de utilizar é usando a função `ParseJSON`. Ela recebe
 o JSON atual como string e uma referência para o objeto que será a saída.
 Retorna `.T.` quando o JSON é analisado com sucesso e `.F.` quando há um erro
 sintático, também atribuindo o erro à referência à variável passada.
