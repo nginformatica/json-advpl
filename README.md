@@ -34,9 +34,9 @@ Local cJSON := '{"n": 1}'
 Local oJSON
 
 If ParseJSON( cJSON, @oJSON )
-  Console( oJSON[#'n'] ) // 1
+  ConOut( oJSON[#'n'] ) // 1
 Else
-  Console( oJSON ) // Erro como string, se houver
+  ConOut( oJSON ) // Erro como string, se houver
 EndIf
 ```
 
