@@ -978,3 +978,4 @@ Method Minify() Class JSON
 Method File() Class JSON
 	::xData := GetFileContents( ::xData )
 	Return Self
+
