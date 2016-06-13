@@ -46,12 +46,11 @@
 // Syntactic additions for the parser
 #xtranslate @Current_In_Parser => Self:xStream\[ Self:nIndex \]
 #xtranslate @Consume => Self:nIndex++
-#xtranslate @Match <cToken> => ;;
-	If Self:nIndex <= Len( Self:xStream ) .And. Self:xStream\[ Self:nIndex, 1 \] == <cToken>    ;;
+#xtranslate @Match <cToken> => If Self:nIndex <= Len( Self:xStream ) .And. Self:xStream\[ Self:nIndex, 1 \] == <cToken> ;;
 			Self:xBuffer := Self:xStream\[ Self:nIndex \]    ;;
 			Self:nIndex++                                    ;;
-	Else                                                   ;;
-		Self:lHasError := .T.                               ;;
+	Else                                                     ;;
+		Self:lHasError := .T.                                ;;
 		Return JSONSyntaxError():New( 'Expecting ' + <cToken> + '. Got ' + IIf( Self:nIndex <= Len( Self:xStream ),  Self:xStream\[ Self:nIndex \]\[ 1 \], 'EOF' ), ;
 												IIf( Self:nIndex <= Len( Self:xStream ), Self:xStream\[ Self:nIndex \]\[ 3 \], Self:xStream\[ Self:nIndex - 1 \]\[ 3 \]),     ;
 												IIf( Self:nIndex <= Len( Self:xStream ), Self:xStream\[ Self:nIndex \]\[ 4 \], Self:xStream\[ Self:nIndex - 1 \]\[ 3 \]) )   ;;
@@ -147,8 +146,8 @@ Method IsJSON() Class JSONSyntaxError
  * @class JSONObject
  */
 Class JSONObject
-	Data aKeys   Init { }
-	Data aValues Init { }
+	Data aKeys
+	Data aValues
 
 	Method New() Constructor
 	Method Set( cKey, xValue )
@@ -162,6 +161,8 @@ EndClass
  * @return JSONObject
  */
 Method New() Class JSONObject
+	::aKeys   := { }
+	::aValues := { }
 	Return Self
 
 /**
@@ -241,6 +242,7 @@ EndClass
 Method New( cSource ) Class JSONLexer
 	::aCharList   := ::StrToList( cSource )
 	::nSourceSize := Len( ::aCharList )
+	::nPosition   := 1
 	Return Self
 
 /**
@@ -637,9 +639,9 @@ Method String() Class JSONLexer
  * @class JSONParser
  */
 Class JSONParser
-	Data xStream   Init { }
-	Data nIndex    Init 1
-	Data lHasError Init .F.
+	Data xStream
+	Data nIndex
+	Data lHasError
 	Data xAST
 	Data xBuffer
 
@@ -661,7 +663,9 @@ EndClass
  * @return JSONParser
  */
 Method New( xStream ) Class JSONParser
-	::xStream := xStream
+	::xStream   := xStream
+	::nIndex    := 1
+	::lHasError := .F.
 	Return Self
 
 /**
@@ -789,6 +793,7 @@ Method _Array() Class JSONParser
 
 		While @Current_In_Parser[ 1 ] == T_COMMA
 			@Consume
+
 			xValue := ::_Value()
 
 			If @Has_Syntax_Error xValue
@@ -833,7 +838,8 @@ Method _Value() Class JSONParser
 			Return Nil
 
 		Case @Current_In_Parser[ 1 ] == T_OPEN_BRACE
-			Return ::_Object()
+			JVAL = ::_Object()
+			Return JVAL
 
 		Case @Current_In_Parser[ 1 ] == T_OPEN_BRACKET
 			Return ::_Array()
@@ -842,7 +848,7 @@ Method _Value() Class JSONParser
 
 	@Match 'value (string, boolean, object, number or array)'
 
-	Return Nil
+	Return 'WOW BAD THINGS!'
 
 /**
  * The class that will use the JSONLexer and the JSONParser to be exposed
@@ -878,8 +884,12 @@ Method New( xData ) Class JSON
  * @return JSONObject | Array
  */
 Method Parse() Class JSON
-	Local aLexer  := JSONLexer():New( ::xData ):GetTokens()
-	Local xResult := JSONParser():New( aLexer ):Parse()
+	Local aLexer  := JSONLexer():New( ::xData )
+	Local xResult
+
+	aLexer := aLexer:GetTokens()
+	xResult := JSONParser():New( aLexer )
+	xResult := xResult:Parse()
 	Return xResult
 
 /**
@@ -951,7 +961,8 @@ Static Function ToString( xItem )
  * @return Character
  */
 Method Minify() Class JSON
-	Return JSONLexer():New( ::xData ):Minify()
+	Local oLexer := JSONLexer():New( ::xData )
+	Return oLexer:Minify()
 
 /**
  * Reads a JSON file and parses it
