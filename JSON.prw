@@ -979,3 +979,20 @@ Method File() Class JSON
 	::xData := GetFileContents( ::xData )
 	Return Self
 
+/**
+ * Exposed function to parse JSON
+ * @param cJSON Character
+ * @param @oJSON Reference<Object>
+ * @return boolean
+ */
+Function ParseJSON( cJSON, oJSON )
+	Local oParser := JSON():New( cJSON )
+	oParser := oParser:Parse()
+
+	If oParser:IsJSON()
+		@oJSON := oParser:Object()
+		Return .T.
+	EndIf
+
+	@oJSON := oParser:Error()
+	Return .F.

@@ -62,4 +62,14 @@ Static Function TestStringify()
   Console( oJSON == '{"data":[{"name":"Marcelo","age":19}],"sub":12.4}' )
   Return
 
+Static Function TestImpParse()
+  Local cJSON := '{"n": 1}'
+  Local oJSON
 
+  If ParseJSON( cJSON, @oJSON )
+    Console( oJSON[#'n'] == 1 )
+  Else
+    Console( .F. )
+  EndIf
+
+  Return
