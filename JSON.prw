@@ -97,9 +97,9 @@ Static Function GetFileContents( cFileName )
  * @class JSONSyntaxError
  */
 Class JSONSyntaxError
-	Data cMessage Init ''
-	Data nLine    Init 1
-	Data nColumn  Init 1
+	Data cMessage
+	Data nLine
+	Data nColumn
 
 	Method New( cMessage, nLine, nColumn ) Constructor
 	Method Error()
@@ -215,13 +215,13 @@ Method Get( cKey ) Class JSONObject
  * @class JSONLexer
  */
 Class JSONLexer
-	Data aCharList   Init { }
-	Data aTokens     Init { }
-	Data cError      Init ''
-	Data nPosition   Init 1
-	Data nSourceSize Init 0
-	Data nLine       Init 1
-	Data nColumn     Init 1
+	Data aCharList
+	Data aTokens
+	Data cError
+	Data nPosition
+	Data nSourceSize
+	Data nLine
+	Data nColumn
 
 	Method New( cSource ) Constructor
 	Method StrToList( cStr )
@@ -241,8 +241,12 @@ EndClass
  */
 Method New( cSource ) Class JSONLexer
 	::aCharList   := ::StrToList( cSource )
+	::aTokens     := { }
+	::cError      := ''
 	::nSourceSize := Len( ::aCharList )
 	::nPosition   := 1
+	::nLine       := 1
+	::nColumn     := 1
 	Return Self
 
 /**
@@ -842,13 +846,14 @@ Method _Value() Class JSONParser
 			Return JVAL
 
 		Case @Current_In_Parser[ 1 ] == T_OPEN_BRACKET
-			Return ::_Array()
+			JVAL := ::_Array()
+			Return JVAL
 
 	EndCase
 
 	@Match 'value (string, boolean, object, number or array)'
 
-	Return 'WOW BAD THINGS!'
+	Return Nil
 
 /**
  * The class that will use the JSONLexer and the JSONParser to be exposed
