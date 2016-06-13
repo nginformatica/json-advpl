@@ -1,31 +1,47 @@
+#include 'json.ch'
+
+User Function RunTest
+  TestMinify()
+  TestParse()
+  TestFile()
+  TestStringify()
+
+  Return
+
 /**
  * BEGIN SECTION TEST
  */
 Static Function TestMinify
   Local cJSON     := '{    "some":      true,      [ "big", 1 ] }'
-  Local cMinified := JSON():New( cJSON ):Minify()
+  Local cMinified := JSON():New( cJSON )
 
-  OutStd( cMinified == '{"some":true,["big",1]}' )
+  cMinified := cMinified:Minify()
+
+  Console( cMinified == '{"some":true,["big",1]}' )
   Return
 
 Static Function TestParse
-  Local oParser := JSON():New( '{ "data": [ { "name": "Marcelo", "age": 19 } ] }' ):Parse()
+  Local oParser := JSON():New( '{ "data": [ { "name": "Marcelo", "age": 19 } ] }' )
+  Local oResult
+  oParser := oParser:Parse()
 
   If oParser:IsJSON()
-    OutStd( oParser:Object()[#'data'][ 1 ][#'name'] == "Marcelo" )
-    OutStd( oParser:Object()[#'data'][ 1 ][#'age'] == 19 )
+    oResult := oParser:Object()
+    Console( oResult[#'data'][ 1 ][#'name'] == "Marcelo" )
+    Console( oResult[#'data'][ 1 ][#'age'] == 19 )
   Else
-    OutStd( oParser:Error() )
+    Console( oParser:Error() )
   EndIf
   Return
 
 Static Function TestFile()
-  Local oParser := JSON():New( './json/main.json' ):File():Parse()
+  Local oParser := JSON():New( 'C:\hb30\bin\json\main.json' )
+  oParser := oParser:File():Parse()
 
   If oParser:IsJSON()
-    OutStd( oParser:Object()[#'children'][ 1 ][#'children'][ 1 ][#'description'] == 'Corretiva' )
+    Console( oParser:Object()[#'children'][ 1 ][#'children'][ 1 ][#'description'] == 'Corretiva' )
   Else
-    OutStd( oParser )
+    Console( oParser )
   EndIf
   Return
 
@@ -40,13 +56,10 @@ Static Function TestStringify()
   oJSON[#'data'][ 1 ][#'name'] := 'Marcelo'
   oJSON[#'data'][ 1 ][#'age']  := 19
 
-  OutStd( JSON():New( oJSON ):Stringify() == '{"data":[{"name":"Marcelo","age":19}],"sub":12.4}' )
+  oJSON := JSON():New( oJSON )
+  oJSON := oJSON:Stringify()
+
+  Console( oJSON == '{"data":[{"name":"Marcelo","age":19}],"sub":12.4}' )
   Return
 
-/// TESTS!
-Function Main
-  TestMinify()
-  TestParse()
-  TestFile()
-  TestStringify()
-  Return
+
