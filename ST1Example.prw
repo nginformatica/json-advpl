@@ -5,6 +5,7 @@
 Function JSONFromST1
   Local aResults := { }
   Local nI   := 1
+  Local oResult
 
   dbSelectArea( 'ST1' )
   dbGoTop()
@@ -18,12 +19,16 @@ Function JSONFromST1
   End
 
   dbCloseArea()
+  
+  oResult := JSON():New( aResults )
 
-  Return JSON():New( aResults ):Stringify()
+  Return oResult:Stringify()
 
 Function JSONToST1( cJSON )
-  Local oParser := JSON():New( cJSON ):Parse()
+  Local oParser := JSON():New( cJSON )
   Local oJSON
+  
+  oParser := oParser:Parse()
 
   If oParser:IsJSON()
     aJSON := oParser:Object()
