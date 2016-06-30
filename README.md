@@ -49,7 +49,8 @@ Local cMinified := JSON():New( cJSON ):Minify()
 
 #### Parsear uma string JSON
 ```delphi
-Local oParser := JSON():New( '{ "data": [ { "name": "John", "age": 19 } ] }' ):Parse()
+Local oParser := JSON():New( '{ "data": [ { "name": "John", "age": 19 } ] }' )
+oParser := oParser:Parse()
 
 If oParser:IsJSON()
    // "John"
@@ -90,7 +91,8 @@ Você também pode acessar objetos via `:Get('name')` ao invés de `[#'name']` e
 ```
 
 ```delphi
-Local oParser := JSON():New( './main.json' ):File():Parse()
+Local oParser := JSON():New( './main.json' )
+oParser := oParser:File():Parse()
 // "Corretiva"
 oParser:Object()[#'children'][ 1 ][#'children'][ 1 ][#'description']
 ```
@@ -100,6 +102,7 @@ oParser:Object()[#'children'][ 1 ][#'children'][ 1 ][#'description']
 A biblioteca provê um objeto para conversão. Use a class `JSON` para isso.
 ```delphi
 Local oJSON := JSONObject():New()
+Local oResult
 
 oJSON[#'data'] := { }
 oJSON[#'sub' ] := 12.4
@@ -109,23 +112,25 @@ aAdd( oJSON[#'data'], JSONObject():New() )
 oJSON[#'data'][ 1 ][#'name'] := 'Marcelo'
 oJSON[#'data'][ 1 ][#'age']  := 19
 // {"data":[{"name":"Marcelo","age":19}],"sub":12.4}
-JSON():New( oJSON ):Stringify()
+
+oResult := JSON():New( oJSON )
+Return oResult:Stringify()
 ```
 
 #### Ler e escrever dados por JSON
 ```delphi
 Function JSONFromST1
   Local aResults := { }
-  Local nI   := 1
+  Local oObj
 
   dbSelectArea( 'ST1' )
   dbGoTop()
 
   While !Eof()
-    aAdd( aResults, JSONObject():New() )
-    aResults[ nI ][#'codigo'] := ST1->T1_CODFUNC
-    aResults[ nI ][#'nome']   := ST1->T1_NOME
-    nI++
+    oObj := JSONObject():New()
+    oObj[#'codigo'] := ST1->T1_CODFUNC
+    oObj[#'nome']   := ST1->T1_NOME
+    aAdd( aResults, oObj )
     dbSkip()
   End
 
@@ -134,8 +139,10 @@ Function JSONFromST1
   Return JSON():New( aResults ):Stringify()
 
 Function JSONToST1( cJSON )
-  Local oParser := JSON():New( cJSON ):Parse()
+  Local oParser := JSON():New( cJSON )
   Local oJSON
+  
+  oParser := oParser:Parse()
 
   If oParser:IsJSON()
     aJSON := oParser:Object()
