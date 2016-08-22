@@ -52,8 +52,8 @@
 	Else                                                     ;;
 		Self:lHasError := .T.                                ;;
 		Return JSONSyntaxError():New( 'Expecting ' + <cToken> + '. Got ' + IIf( Self:nIndex <= Len( Self:xStream ),  Self:xStream\[ Self:nIndex \]\[ 1 \], 'EOF' ), ;
-												IIf( Self:nIndex <= Len( Self:xStream ), Self:xStream\[ Self:nIndex \]\[ 3 \], Self:xStream\[ Self:nIndex - 1 \]\[ 3 \]),     ;
-												IIf( Self:nIndex <= Len( Self:xStream ), Self:xStream\[ Self:nIndex \]\[ 4 \], Self:xStream\[ Self:nIndex - 1 \]\[ 3 \]) )   ;;
+		                              IIf( Self:nIndex <= Len( Self:xStream ), Self:xStream\[ Self:nIndex \]\[ 3 \], Self:xStream\[ Self:nIndex - 1 \]\[ 3 \]),     ;
+		                              IIf( Self:nIndex <= Len( Self:xStream ), Self:xStream\[ Self:nIndex \]\[ 4 \], Self:xStream\[ Self:nIndex - 1 \]\[ 3 \]) )   ;;
 	EndIf
 
 
@@ -78,18 +78,23 @@
  * @return Character
  */
 Static Function GetFileContents( cFileName )
-	Local nHandler  := fOpen( cFileName, FO_READWRITE + FO_SHARED )
-	Local nSize
-	Local xBuffer
+	Local nHandler := FOpen( cFileName, FO_READWRITE + FO_SHARED )
+	Local nSize    := 0
+	Local xBuffer  := ''
 
 	If nHandler == -1
 		Return Nil
 	EndIf
 
-	nSize   := Directory( cFileName )[ 1, 2 ]
-	xBuffer := Space( nSize )
-
-	fRead( nHandler, @xBuffer, nSize )
+	nSize := FSeek( nHandler, 0, FS_END )
+	FSeek( nHandler, 0 )
+	#ifdef __HARBOUR__
+		FRead( nHandler, @xBuffer, nSize )
+	#else
+		FRead( nHandler, xBuffer, nSize )
+	#endif
+	
+	FClose( nHandler )
 	Return xBuffer
 
 /**
@@ -903,8 +908,72 @@ Method Parse() Class JSON
  * @method Stringify
  * @return Character
  */
-Method Stringify() Class JSON
-	Return ToString( ::xData )
+Method Stringify( lOptimize ) Class JSON
+	Local cResult
+	If lOptimize
+		cResult := OptToString( ::xData )
+	Else
+		cResult := ToString( ::xData )
+	EndIf
+	Return cResult
+	
+Static Function OptToString( xItem )
+	Local oResult
+	Local cType   := ValType( xItem )
+	Local xHelper := ''
+	Local nI
+
+	Do Case
+		Case cType == 'U'
+			Return 'null'
+
+		Case cType == 'N'
+			Return AllTrim( Str( xItem ) )
+
+		Case cType == 'C'
+			xHelper := StrTran( xItem, '\', '\\' )
+			xHelper := StrTran( xHelper, '"', '\"')
+			Return '"' + xHelper + '"'
+
+		Case cType == 'L'
+			Return IIf( xItem, 'true', 'false' )
+
+		Case cType == 'A'
+			oResult := StringBuilder():New( '[' )
+
+			For nI := 1 To Len( xItem )
+				oResult:Append( OptToString( xItem[ nI ] ) )
+
+				If nI < Len( xItem )
+					oResult:Append( ',' )
+				EndIf
+			Next nI
+
+			oResult:Append( ']' )
+			xHelper := oResult:Read()
+			oResult:Dispose()
+			Return xHelper
+
+		Case cType == 'O'
+			oResult := StringBuilder():New( '{' )
+
+			For nI := 1 To Len( xItem:aKeys )
+				oResult:Append( ToString( xItem:aKeys[ nI ] ) )
+				oResult:Append( ':' )
+				oResult:Append( ToString( xItem:aValues[ nI ] ) )
+
+				If nI < Len( xItem:aKeys )
+					oResult:Append( ',' )
+				EndIf
+			Next nI
+
+			oResult:Append( '}' )
+			xHelper := oResult:Read()
+			oResult:Dispose()
+			Return xHelper
+
+	EndCase
+	Return Nil
 
 Static Function ToString( xItem )
 	Local cResult := ''
