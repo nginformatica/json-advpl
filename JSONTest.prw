@@ -27,7 +27,7 @@ Static Function TestParse
   oParser := oParser:Parse()
 
   If oParser:IsJSON()
-  	oResult := oParser:Object()
+    oResult := oParser:Object()
     Console( oResult[#'data'][ 1 ][#'name'] == "Marcelo" )
     Console( oResult[#'data'][ 1 ][#'age'] == 19 )
   Else
@@ -54,7 +54,7 @@ Static Function TestStringify()
   oJSON[#'sub' ] := 12.4
 
   oJSON := JSON():New( oJSON )
-  oJSON := oJSON:Stringify(.T.)
+  oJSON := oJSON:Stringify( .T. )
 
   Console( oJSON == '{"data":[{"name":"Marcelo"}],"sub":12.4}' )
   Return
@@ -62,11 +62,11 @@ Static Function TestStringify()
 Static Function TestImpParse()
   Local cJSON := '{"n": 1}'
   Local oJSON
-  
+
   If ParseJSON( cJSON, @oJSON )
     Console( oJSON[#'n'] == 1 )
   Else
     Console( .F. )
   EndIf
-  
+
   Return
