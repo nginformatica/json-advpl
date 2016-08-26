@@ -2,6 +2,10 @@
 
 Copyright (C) 2016 NG Informática - TOTVS Software Partner
 
+<div align="center" style="width: 100%">
+   <img src="https://s3.amazonaws.com/media-p.slid.es/uploads/kouceylahadji-1/images/174949/json_logo-555px__1_.png" />
+</div>
+
 ### Instalação
 Compile o arquivo `src/JSON.prw` no repositório e adicione o arquivo `includes/json.ch` à pasta de *includes*.
 
