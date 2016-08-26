@@ -19,7 +19,7 @@ Function JSONFromST1
   End
 
   dbCloseArea()
-  
+
   oResult := JSON():New( aResults )
 
   Return oResult:Stringify()
@@ -27,7 +27,7 @@ Function JSONFromST1
 Function JSONToST1( cJSON )
   Local oParser := JSON():New( cJSON )
   Local oJSON
-  
+
   oParser := oParser:Parse()
 
   If oParser:IsJSON()

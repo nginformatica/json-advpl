@@ -15,7 +15,7 @@ User Function RunTest
 Static Function TestMinify
   Local cJSON     := '{    "some":      true,      [ "big", 1 ] }'
   Local cMinified := JSON():New( cJSON )
-  
+
   cMinified := cMinified:Minify()
 
   Console( cMinified == '{"some":true,["big",1]}' )
@@ -48,7 +48,7 @@ Static Function TestFile()
 
 Static Function TestStringify()
   Local oJSON := JSONObject():New()
-  
+
   oJSON[#'data'] := { JSONObject():New() }
   oJSON[#'data'][ 1 ][#'name'] := "Marcelo"
   oJSON[#'sub' ] := 12.4
