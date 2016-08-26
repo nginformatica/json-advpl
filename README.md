@@ -176,9 +176,10 @@ Function WriteMetaData
 
 Esse projeto é mantido e desenvolvido pela [NG Informática](http://ngi.com.br) ─ TOTVS Software Partner
 
-<div align="center" style="width: 100%;">
+<div align="center" style="width: 100%; height: 100px;">
    <img src="https://avatars1.githubusercontent.com/u/21263692?v=3&s=200" />
-   <img src="https://www.totvs.com/assets/images/logo-responsivo.png" />
 </div>
+
+## Log de alterações
 
 Elaborado por Marcelo Camargo em 09/06/2016
