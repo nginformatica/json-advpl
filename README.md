@@ -3,7 +3,7 @@
 Copyright (C) 2016 NG Informática - TOTVS Software Partner
 
 ### Instalação
-Compile o arquivo `JSON.prw` no repositório e adicione o arquivo `json.ch` à pasta de *includes*.
+Compile o arquivo `src/JSON.prw` no repositório e adicione o arquivo `includes/json.ch` à pasta de *includes*.
 
 ### Inclusão de arquivos
 ```
@@ -29,7 +29,7 @@ Retorna `.T.` quando o JSON é analisado com sucesso e `.F.` quando há um erro
 sintático, também atribuindo o erro à referência à variável passada.
 
 #### Parsear JSON simples
-```delphi
+```xbase
 Local cJSON := '{"n": 1}'
 Local oJSON
 
@@ -41,14 +41,14 @@ EndIf
 ```
 
 #### Minificar um JSON existente
-```delphi
+```xbase
 Local cJSON     := '{  "some":   true, [ "big", 1 ] }'
 Local cMinified := JSON():New( cJSON ):Minify()
 // '{"some":true,["big",1]}'
 ```
 
 #### Parsear uma string JSON
-```delphi
+```xbase
 Local oParser := JSON():New( '{ "data": [ { "name": "John", "age": 19 } ] }' )
 oParser := oParser:Parse()
 
@@ -84,13 +84,12 @@ Você também pode acessar objetos via `:Get('name')` ao invés de `[#'name']` e
           "description":"Preventiva"
         }
       ]
-    },
-    {
-      "key":"edit_order",
-      "description":"Alterar O.S.", [ ... ]
+    }
+  ]
+}
 ```
 
-```delphi
+```xbase
 Local oParser := JSON():New( './main.json' )
 oParser := oParser:File():Parse()
 // "Corretiva"
@@ -100,7 +99,7 @@ oParser:Object()[#'children'][ 1 ][#'children'][ 1 ][#'description']
 #### Transformar um objeto em uma string
 
 A biblioteca provê um objeto para conversão. Use a class `JSON` para isso.
-```delphi
+```xbase
 Local oJSON := JSONObject():New()
 Local oResult
 
@@ -118,7 +117,7 @@ Return oResult:Stringify()
 ```
 
 #### Ler e escrever dados por JSON
-```delphi
+```xbase
 Function JSONFromST1
   Local aResults := { }
   Local oObj
@@ -141,7 +140,7 @@ Function JSONFromST1
 Function JSONToST1( cJSON )
   Local oParser := JSON():New( cJSON )
   Local oJSON
-  
+
   oParser := oParser:Parse()
 
   If oParser:IsJSON()
