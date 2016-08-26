@@ -6,12 +6,12 @@ Copyright (C) 2016 NG Informática - TOTVS Software Partner
 Compile o arquivo `src/JSON.prw` no repositório e adicione o arquivo `includes/json.ch` à pasta de *includes*.
 
 ### Inclusão de arquivos
-```
+```xbase
 #include 'json.ch'
 ```
 
 ### Interfaces
-```
+```xbase
 Class JSON
    Method New( xData ) Constructor
    Method Parse()
