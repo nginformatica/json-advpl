@@ -1054,7 +1054,7 @@ Method File() Class JSON
  * @param @oJSON Reference<Object>
  * @return boolean
  */
-Function ParseJSON( cJSON, oJSON )
+User Function ParseJSON( cJSON, oJSON )
     Local oParser := JSON():New( cJSON )
     oParser := oParser:Parse()
 
