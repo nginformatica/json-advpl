@@ -176,12 +176,12 @@ Function WriteMetaData
 
 Esse projeto é mantido e desenvolvido pela [NG Informática](http://ngi.com.br) ─ TOTVS Software Partner
 
-<div align="center" style="width: 100%; height: 100px;">
+<div align="center" style="width: 100%; height: 100px; vertical-align:middle;">
    <div>
       <img src="https://avatars1.githubusercontent.com/u/21263692?v=3&s=200" />
    </div>
-   <div style="width: 100px" >
-      <img src="http://www.escriba.com.br/wp-content/uploads/2014/10/totvs.png" style="width: 100px" />
+   <div>
+      <img src="http://www.escriba.com.br/wp-content/uploads/2014/10/totvs.png" width="100" />
    </div>
 </div>
 
