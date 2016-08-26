@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>JSON AdvPL by nginformatica</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">JSON AdvPL</h1>
+      <h2 class="project-tagline">JSON parser written in and for TOTVS AdvPL</h2>
+      <a href="https://github.com/nginformatica/json-advpl" class="btn">View on GitHub</a>
+      <a href="https://github.com/nginformatica/json-advpl/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/nginformatica/json-advpl/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h2>
+<a id="advpl-json-parser" class="anchor" href="#advpl-json-parser" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>AdvPL JSON Parser</h2>
+
+<p>Copyright (C) 2016 NG Informática - TOTVS Software Partner</p>
+
+<div align="center">
+   <div>
+      <img src="https://s3.amazonaws.com/media-p.slid.es/uploads/kouceylahadji-1/images/174949/json_logo-555px__1_.png">
+   </div>
+   <img src="https://img.shields.io/badge/language-advpl-green.svg">
+</div>
+
+<h3>
+<a id="instalação" class="anchor" href="#instala%C3%A7%C3%A3o" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Instalação</h3>
+
+<p>Compile o arquivo <code>src/JSON.prw</code> no repositório e adicione o arquivo <code>includes/json.ch</code> à pasta de <em>includes</em>.</p>
+
+<h3>
+<a id="inclusão-de-arquivos" class="anchor" href="#inclus%C3%A3o-de-arquivos" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Inclusão de arquivos</h3>
+
+<div class="highlight highlight-source-harbour"><pre>#<span class="pl-k">include</span> 'json.ch'</pre></div>
+
+<h3>
+<a id="interfaces" class="anchor" href="#interfaces" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Interfaces</h3>
+
+<div class="highlight highlight-source-harbour"><pre>Class JSON
+   Method <span class="pl-en">New</span>( <span class="pl-v">xData</span> ) Constructor
+   Method <span class="pl-en">Parse</span>()
+   Method <span class="pl-en">Stringify</span>()
+   Method <span class="pl-en">Minify</span>()
+   Method <span class="pl-en">File</span>()
+EndClass</pre></div>
+
+<h3>
+<a id="casos-de-uso" class="anchor" href="#casos-de-uso" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Casos de uso</h3>
+
+<p>A maneira mais simples de utilizar é usando a função <code>U_ParseJSON</code>. Ela recebe
+o JSON atual como string e uma referência para o objeto que será a saída.
+Retorna <code>.T.</code> quando o JSON é analisado com sucesso e <code>.F.</code> quando há um erro
+sintático, também atribuindo o erro à referência à variável passada.</p>
+
+<h4>
+<a id="parsear-json-simples" class="anchor" href="#parsear-json-simples" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Parsear JSON simples</h4>
+
+<div class="highlight highlight-source-harbour"><pre>Local <span class="pl-v">cJSON</span> <span class="pl-k">:=</span> '{<span class="pl-s">"n"</span>: <span class="pl-c1">1</span>}'
+Local <span class="pl-v">oJSON</span>
+
+If <span class="pl-en">U_ParseJSON</span>( <span class="pl-v">cJSON</span>, <span class="pl-k">@</span><span class="pl-v">oJSON</span> )
+  <span class="pl-en">ConOut</span>( <span class="pl-v">oJSON</span>[#<span class="pl-s">'n'</span>] ) <span class="pl-c">// 1</span>
+Else
+  <span class="pl-en">ConOut</span>( <span class="pl-v">oJSON</span> ) <span class="pl-c">// Erro como string, se houver</span>
+EndIf</pre></div>
+
+<h4>
+<a id="minificar-um-json-existente" class="anchor" href="#minificar-um-json-existente" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Minificar um JSON existente</h4>
+
+<div class="highlight highlight-source-harbour"><pre>Local <span class="pl-v">cJSON</span>     <span class="pl-k">:=</span> '{  <span class="pl-s">"some"</span>:   true, [ <span class="pl-s">"big"</span>, <span class="pl-c1">1</span> ] }'
+Local <span class="pl-v">cMinified</span> <span class="pl-k">:=</span> <span class="pl-en">JSON</span>():<span class="pl-en">New</span>( <span class="pl-v">cJSON</span> ):<span class="pl-en">Minify</span>()
+<span class="pl-c">// '{"some":true,["big",1]}'</span></pre></div>
+
+<h4>
+<a id="parsear-uma-string-json" class="anchor" href="#parsear-uma-string-json" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Parsear uma string JSON</h4>
+
+<div class="highlight highlight-source-harbour"><pre>Local <span class="pl-v">oParser</span> <span class="pl-k">:=</span> <span class="pl-en">JSON</span>():<span class="pl-en">New</span>( '{ <span class="pl-s">"data"</span>: [ { <span class="pl-s">"name"</span>: <span class="pl-s">"John"</span>, <span class="pl-s">"age"</span>: <span class="pl-c1">19</span> } ] }' )
+<span class="pl-v">oParser</span> <span class="pl-k">:=</span> <span class="pl-v">oParser</span>:<span class="pl-en">Parse</span>()
+
+If <span class="pl-v">oParser</span>:<span class="pl-en">IsJSON</span>()
+   <span class="pl-c">// "John"</span>
+   <span class="pl-v">oParser</span>:<span class="pl-en">Object</span>()[#'data'][ <span class="pl-c1">1</span> ][#'name']
+   <span class="pl-c">// 19</span>
+   <span class="pl-v">oParser</span>:<span class="pl-en">Object</span>()[#'data'][ <span class="pl-c1">1</span> ][#'age']
+Else
+   <span class="pl-c">// Em caso de erro</span>
+   <span class="pl-en">ConOut</span>( <span class="pl-v">oParser</span>:<span class="pl-en">Error</span>() )
+EndIf</pre></div>
+
+<p>Você também pode acessar objetos via <code>:Get('name')</code> ao invés de <code>[#'name']</code> e definir com <code>:Set('name', 'Marcelo')</code> ao invés de <code>[#'name'] := 'Marcelo'</code>.</p>
+
+<h4>
+<a id="analisar-arquivo-json" class="anchor" href="#analisar-arquivo-json" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Analisar arquivo JSON</h4>
+
+<div class="highlight highlight-source-json"><pre>{
+  <span class="pl-s"><span class="pl-pds">"</span>key<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>all<span class="pl-pds">"</span></span>,
+  <span class="pl-s"><span class="pl-pds">"</span>description<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>Todas as permissões<span class="pl-pds">"</span></span>,
+  <span class="pl-s"><span class="pl-pds">"</span>children<span class="pl-pds">"</span></span>:[
+    {
+      <span class="pl-s"><span class="pl-pds">"</span>key<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>create_order<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>description<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>Incluir O.S.<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>children<span class="pl-pds">"</span></span>:[
+        {
+          <span class="pl-s"><span class="pl-pds">"</span>key<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>create_order_corr<span class="pl-pds">"</span></span>,
+          <span class="pl-s"><span class="pl-pds">"</span>description<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>Corretiva<span class="pl-pds">"</span></span>
+        },
+        {
+          <span class="pl-s"><span class="pl-pds">"</span>key<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>create_order_prev<span class="pl-pds">"</span></span>,
+          <span class="pl-s"><span class="pl-pds">"</span>description<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>Preventiva<span class="pl-pds">"</span></span>
+        }
+      ]
+    }
+  ]
+}</pre></div>
+
+<div class="highlight highlight-source-harbour"><pre>Local <span class="pl-v">oParser</span> <span class="pl-k">:=</span> <span class="pl-en">JSON</span>():<span class="pl-en">New</span>( './main.json' )
+<span class="pl-v">oParser</span> <span class="pl-k">:=</span> <span class="pl-v">oParser</span>:<span class="pl-en">File</span>():<span class="pl-en">Parse</span>()
+<span class="pl-c">// "Corretiva"</span>
+<span class="pl-v">oParser</span>:<span class="pl-en">Object</span>()[#'children'][ <span class="pl-c1">1</span> ][#'children'][ <span class="pl-c1">1</span> ][#'description']</pre></div>
+
+<h4>
+<a id="transformar-um-objeto-em-uma-string" class="anchor" href="#transformar-um-objeto-em-uma-string" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Transformar um objeto em uma string</h4>
+
+<p>A biblioteca provê um objeto para conversão. Use a class <code>JSON</code> para isso.</p>
+
+<div class="highlight highlight-source-harbour"><pre>Local <span class="pl-v">oJSON</span> <span class="pl-k">:=</span> <span class="pl-en">JSONObject</span>():<span class="pl-en">New</span>()
+Local <span class="pl-v">oResult</span>
+
+<span class="pl-v">oJSON</span>[#'data'] <span class="pl-k">:=</span> { }
+<span class="pl-v">oJSON</span>[#'sub' ] <span class="pl-k">:=</span> <span class="pl-c1">12.4</span>
+
+<span class="pl-v">aAdd</span>( <span class="pl-v">oJSON</span>[#'data'], <span class="pl-en">JSONObject</span>():<span class="pl-en">New</span>() )
+
+<span class="pl-v">oJSON</span>[#'data'][ <span class="pl-c1">1</span> ][#'name'] <span class="pl-k">:=</span> 'Marcelo'
+<span class="pl-v">oJSON</span>[#'data'][ <span class="pl-c1">1</span> ][#'age']  <span class="pl-k">:=</span> <span class="pl-c1">19</span>
+<span class="pl-c">// {"data":[{"name":"Marcelo","age":19}],"sub":12.4}</span>
+
+<span class="pl-v">oResult</span> <span class="pl-k">:=</span> <span class="pl-en">JSON</span>():<span class="pl-en">New</span>( <span class="pl-v">oJSON</span> )
+Return <span class="pl-v">oResult</span>:<span class="pl-en">Stringify</span>()</pre></div>
+
+<h4>
+<a id="ler-e-escrever-dados-por-json" class="anchor" href="#ler-e-escrever-dados-por-json" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Ler e escrever dados por JSON</h4>
+
+<div class="highlight highlight-source-harbour"><pre>Function JSONFromST1
+  Local <span class="pl-v">aResults</span> <span class="pl-k">:=</span> { }
+  Local <span class="pl-v">oObj</span>
+
+  <span class="pl-en">dbSelectArea</span>( 'ST1' )
+  <span class="pl-en">dbGoTop</span>()
+
+  While <span class="pl-k">!</span><span class="pl-en">Eof</span>()
+    <span class="pl-v">oObj</span> <span class="pl-k">:=</span> <span class="pl-en">JSONObject</span>():<span class="pl-en">New</span>()
+    <span class="pl-v">oObj</span>[#'codigo'] <span class="pl-k">:=</span> ST1<span class="pl-k">-&gt;</span>T1_CODFUNC
+    <span class="pl-v">oObj</span>[#'nome']   <span class="pl-k">:=</span> ST1<span class="pl-k">-&gt;</span>T1_NOME
+    <span class="pl-v">aAdd</span>( <span class="pl-v">aResults</span>, <span class="pl-v">oObj</span> )
+    <span class="pl-en">dbSkip</span>()
+  End
+
+  <span class="pl-en">dbCloseArea</span>()
+
+  Return <span class="pl-en">JSON</span>():<span class="pl-en">New</span>( <span class="pl-v">aResults</span> ):<span class="pl-en">Stringify</span>()
+
+Function <span class="pl-en">JSONToST1</span>( <span class="pl-v">cJSON</span> )
+  Local <span class="pl-v">oParser</span> <span class="pl-k">:=</span> <span class="pl-en">JSON</span>():<span class="pl-en">New</span>( <span class="pl-v">cJSON</span> )
+  Local <span class="pl-v">oJSON</span>
+
+  <span class="pl-v">oParser</span> <span class="pl-k">:=</span> <span class="pl-v">oParser</span>:<span class="pl-en">Parse</span>()
+
+  If <span class="pl-v">oParser</span>:<span class="pl-en">IsJSON</span>()
+    <span class="pl-v">aJSON</span> <span class="pl-k">:=</span> <span class="pl-v">oParser</span>:<span class="pl-en">Object</span>()
+
+    <span class="pl-en">dbSelectArea</span>( 'ST1' )
+    For <span class="pl-v">nI</span> <span class="pl-k">:=</span> <span class="pl-c1">1</span> To <span class="pl-en">Len</span>( <span class="pl-v">aJSON</span> )
+      <span class="pl-en">RecLock</span>( 'ST1', <span class="pl-c1">.T.</span> )
+      ST1<span class="pl-k">-&gt;</span>T1_CODIGO <span class="pl-k">:=</span> <span class="pl-v">aJSON</span>[ <span class="pl-v">nI</span> ][#'codigo']
+      ST1<span class="pl-k">-&gt;</span>T1_NOME   <span class="pl-k">:=</span> <span class="pl-v">aJSON</span>[ <span class="pl-v">nI</span> ][#'nome']
+      <span class="pl-en">MsUnlock</span>()
+    Next <span class="pl-v">nI</span>
+    <span class="pl-en">dbCloseArea</span>()
+
+  Else
+    Return <span class="pl-c1">.F.</span>
+  EndIf
+
+  Return <span class="pl-c1">.T.</span>
+
+Function WriteMetaData
+  Return <span class="pl-en">JSONToST1</span>( '[{<span class="pl-s">"nome"</span>:<span class="pl-s">"Richard"</span>, <span class="pl-s">"codigo"</span>: <span class="pl-s">"01"</span>},{<span class="pl-s">"nome"</span>:<span class="pl-s">"John"</span>,<span class="pl-s">"codigo"</span>:<span class="pl-s">"02"</span>}]' )</pre></div>
+
+<p>Elaborado por Marcelo Camargo em 09/06/2016</p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/nginformatica/json-advpl">JSON AdvPL</a> is maintained by <a href="https://github.com/nginformatica">nginformatica</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
